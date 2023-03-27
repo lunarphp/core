@@ -6,7 +6,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 use Lunar\DataTypes\Price as DataTypesPrice;
 use Lunar\DataTypes\ShippingOption;
+use Lunar\DiscountTypes\AmountOff;
 use Lunar\Exceptions\Carts\CartException;
+use Lunar\Facades\Discounts;
 use Lunar\Facades\ShippingManifest;
 use Lunar\Models\Cart;
 use Lunar\Models\CartAddress;
@@ -15,6 +17,7 @@ use Lunar\Models\Channel;
 use Lunar\Models\Country;
 use Lunar\Models\Currency;
 use Lunar\Models\Customer;
+use Lunar\Models\CustomerGroup;
 use Lunar\Models\Discount;
 use Lunar\Models\Order;
 use Lunar\Models\Price;
@@ -26,9 +29,6 @@ use Lunar\Models\TaxZone;
 use Lunar\Models\TaxZonePostcode;
 use Lunar\Tests\Stubs\User as StubUser;
 use Lunar\Tests\TestCase;
-use Lunar\DiscountTypes\Discount as DiscountTypesDiscount;
-use Lunar\Facades\Discounts;
-use Lunar\Models\CustomerGroup;
 
 /**
  * @group lunar.carts
@@ -82,7 +82,7 @@ class CartTest extends TestCase
         ]);
 
         $discount = Discount::factory()->create([
-            'type' => DiscountTypesDiscount::class,
+            'type' => AmountOff::class,
             'name' => 'Test Coupon',
             'coupon' => 'valid-coupon',
             'data' => [
@@ -460,6 +460,73 @@ class CartTest extends TestCase
         $cart->calculate();
 
         $this->assertEquals(600, $cart->subTotal->value);
-        $this->assertEquals(700, $cart->total->value);
+        $this->assertEquals(720, $cart->total->value);
+    }
+
+    /** @test */
+    public function can_create_a_discount_breakdown()
+    {
+        $currency = Currency::factory()->create();
+        $channel = Channel::factory()->create();
+
+        $customerGroup = CustomerGroup::factory()->create([
+            'default' => true,
+        ]);
+
+        $discount = Discount::factory()->create([
+            'type' => AmountOff::class,
+            'name' => 'Test Coupon',
+            'coupon' => 'valid-coupon',
+            'data' => [
+                'fixed_value' => false,
+                'percentage' => 10,
+            ],
+        ]);
+
+        $discount->channels()->sync([
+            $channel->id => [
+                'enabled' => true,
+                'starts_at' => now(),
+            ],
+        ]);
+
+        $discount->customerGroups()->sync([
+            $customerGroup->id => [
+                'enabled' => true,
+                'visible' => true,
+                'starts_at' => now(),
+            ],
+        ]);
+
+        $cart = Cart::create([
+            'currency_id' => $currency->id,
+            'channel_id' => $channel->id,
+            'meta' => ['foo' => 'bar'],
+        ]);
+
+        $variant = ProductVariant::factory()->create();
+
+        Price::factory()->create([
+            'price' => 100,
+            'tier' => 1,
+            'currency_id' => $currency->id,
+            'priceable_type' => get_class($variant),
+            'priceable_id' => $variant->id,
+        ]);
+
+        $cart->lines()->create([
+            'purchasable_type' => ProductVariant::class,
+            'purchasable_id' => $variant->id,
+            'quantity' => 1,
+        ]);
+
+        $this->assertNull($cart->coupon_code);
+
+        $cart->coupon_code = 'valid-coupon';
+
+        $cart->calculate();
+
+        $this->assertCount(1, $cart->discountBreakdown);
+        $this->assertSame(10, $cart->discountBreakdown->first()->price->value);
     }
 }

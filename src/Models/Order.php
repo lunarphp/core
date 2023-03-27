@@ -4,6 +4,7 @@ namespace Lunar\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Lunar\Base\BaseModel;
+use Lunar\Base\Casts\DiscountBreakdown;
 use Lunar\Base\Casts\Price;
 use Lunar\Base\Casts\TaxBreakdown;
 use Lunar\Base\Traits\HasMacros;
@@ -12,6 +13,30 @@ use Lunar\Base\Traits\LogsActivity;
 use Lunar\Base\Traits\Searchable;
 use Lunar\Database\Factories\OrderFactory;
 
+/**
+ * @property int $id
+ * @property ?int $customer_id
+ * @property ?int $user_id
+ * @property int $channel_id
+ * @property bool $new_customer
+ * @property string $status
+ * @property ?string $reference
+ * @property ?string $customer_reference
+ * @property int $sub_total
+ * @property int $discount_total
+ * @property array $discount_breakdown
+ * @property array $tax_breakdown
+ * @property int $tax_total
+ * @property int $total
+ * @property ?string $notes
+ * @property string $currency
+ * @property ?string $compare_currency_code
+ * @property float $exchange_rate
+ * @property ?\Illuminate\Support\Carbon $placed_at
+ * @property ?array $meta
+ * @property ?\Illuminate\Support\Carbon $created_at
+ * @property ?\Illuminate\Support\Carbon $updated_at
+ */
 class Order extends BaseModel
 {
     use HasFactory,
@@ -53,6 +78,7 @@ class Order extends BaseModel
         'placed_at' => 'datetime',
         'sub_total' => Price::class,
         'discount_total' => Price::class,
+        'discount_breakdown' => DiscountBreakdown::class,
         'tax_total' => Price::class,
         'total' => Price::class,
         'shipping_total' => Price::class,
