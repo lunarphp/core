@@ -12,6 +12,21 @@ use Lunar\Base\Traits\HasCustomerGroups;
 use Lunar\Base\Traits\HasTranslations;
 use Lunar\Database\Factories\DiscountFactory;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $handle
+ * @property ?string $coupon
+ * @property string $type
+ * @property \Illuminate\Support\Carbon $starts_at
+ * @property \Illuminate\Support\Carbon $ends_at
+ * @property int $uses
+ * @property ?int $max_uses
+ * @property int $priority
+ * @property bool $stop
+ * @property ?\Illuminate\Support\Carbon $created_at
+ * @property ?\Illuminate\Support\Carbon $updated_at
+ */
 class Discount extends BaseModel
 {
     use HasFactory,
@@ -42,6 +57,16 @@ class Discount extends BaseModel
         return DiscountFactory::new();
     }
 
+    public function users()
+    {
+        $prefix = config('lunar.database.table_prefix');
+
+        return $this->belongsToMany(
+            config('auth.providers.users.model'),
+            "{$prefix}discount_user"
+        )->withTimestamps();
+    }
+
     /**
      * Return the purchasables relationship.
      *
@@ -56,7 +81,7 @@ class Discount extends BaseModel
     {
         return $this->hasMany(DiscountPurchasable::class)->whereType('condition');
     }
-    
+
     public function purchasableLimitations()
     {
         return $this->hasMany(DiscountPurchasable::class)->whereType('limitation');
