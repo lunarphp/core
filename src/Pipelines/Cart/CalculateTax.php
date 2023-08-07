@@ -80,12 +80,8 @@ class CalculateTax
                 $shippingTax->amounts
             );
 
-            $shippingTotal = $shippingSubTotal;
-            if (! prices_inc_tax()) {
-                $shippingTotal += $shippingTaxTotal?->value;
-            }
             $cart->shippingTotal = new Price(
-                $shippingTotal,
+                $shippingSubTotal + $shippingTaxTotal?->value,
                 $cart->currency,
                 1
             );
