@@ -116,10 +116,14 @@ class DiscountManager implements DiscountManagerInterface
     /**
      * Returns the available discounts.
      */
-    public function getDiscounts(Cart $cart = null): Collection
+    public function getDiscounts(?Cart $cart = null): Collection
     {
         if ($this->channels->isEmpty() && $defaultChannel = Channel::getDefault()) {
             $this->channel($defaultChannel);
+        }
+
+        if ($cart && $customerGroups = $cart->customer?->customerGroups) {
+            $this->customerGroup($customerGroups);
         }
 
         if ($this->customerGroups->isEmpty() && $defaultGroup = CustomerGroup::getDefault()) {
@@ -137,6 +141,7 @@ class DiscountManager implements DiscountManagerInterface
                 $cart,
                 function ($query, $value) {
                     return $query->where(function ($query) use ($value) {
+
                         return $query->where(fn ($query) => $query->products(
                             $value->lines->pluck('purchasable.product_id')->filter()->values(),
                             ['condition', 'limitation']

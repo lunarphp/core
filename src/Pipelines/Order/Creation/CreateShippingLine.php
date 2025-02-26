@@ -10,11 +10,11 @@ use Lunar\Models\OrderLine;
 class CreateShippingLine
 {
     /**
-     * @return Closure
+     * @return mixed
      */
     public function handle(Order $order, Closure $next)
     {
-        $cart = $order->cart->calculate();
+        $cart = $order->cart->recalculate();
 
         // If we have a shipping address with a shipping option.
         if (($shippingAddress = $cart->shippingAddress) &&

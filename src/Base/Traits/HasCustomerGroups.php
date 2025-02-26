@@ -4,6 +4,7 @@ namespace Lunar\Base\Traits;
 
 use DateTime;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Lunar\Models\CustomerGroup;
@@ -17,6 +18,29 @@ trait HasCustomerGroups
      */
     abstract public function customerGroups(): Relation;
 
+    public static function getExtraCustomerGroupPivotValues(CustomerGroup $customerGroup): array
+    {
+        return [
+        ];
+    }
+
+    public static function bootHasCustomerGroups(): void
+    {
+        static::created(function (Model $model) {
+            $model->customerGroups()->sync(
+                CustomerGroup::get()->mapWithKeys(
+                    fn ($customerGroup): array => [$customerGroup->id => [
+                        'enabled' => $customerGroup->default,
+                        'starts_at' => now(),
+                        'ends_at' => null,
+                        'visible' => $customerGroup->default,
+                        ...static::getExtraCustomerGroupPivotValues($customerGroup),
+                    ]]
+                )
+            );
+        });
+    }
+
     /**
      * Schedule models against customer groups.
      *
@@ -25,8 +49,8 @@ trait HasCustomerGroups
      */
     public function scheduleCustomerGroup(
         $models,
-        DateTime $starts = null,
-        DateTime $ends = null,
+        ?DateTime $starts = null,
+        ?DateTime $ends = null,
         array $pivotData = []
     ) {
         $this->schedule(
@@ -55,22 +79,21 @@ trait HasCustomerGroups
         );
     }
 
-    protected function validateScheduling(Collection $models)
+    protected function validateScheduling(Collection $models): bool
     {
         foreach ($models as $model) {
             if (is_object($model) && ! ($model instanceof CustomerGroup)) {
                 return false;
             }
         }
+
+        return true;
     }
 
     /**
      * Apply customer group scope.
-     *
-     * @param  Collection  $customerGroups
-     * @return Builder
      */
-    public function applyCustomerGroupScope(Builder $query, Collection $groupIds, DateTime $startsAt, DateTime $endsAt)
+    public function applyCustomerGroupScope(Builder $query, Collection $groupIds, DateTime $startsAt, DateTime $endsAt): Builder
     {
         return $query->whereHas('customerGroups', function ($relation) use ($groupIds, $startsAt, $endsAt) {
             $relation->whereIn(
@@ -96,7 +119,7 @@ trait HasCustomerGroups
      * @param  CustomerGroup|string  $customerGroup
      * @return Builder
      */
-    public function scopeCustomerGroup($query, CustomerGroup|iterable $customerGroup = null, DateTime $startsAt = null, DateTime $endsAt = null)
+    public function scopeCustomerGroup($query, CustomerGroup|iterable|null $customerGroup = null, ?DateTime $startsAt = null, ?DateTime $endsAt = null)
     {
         if (blank($customerGroup)) {
             return $query;

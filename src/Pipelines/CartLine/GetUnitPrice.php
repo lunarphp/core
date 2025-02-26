@@ -13,7 +13,7 @@ class GetUnitPrice
     /**
      * Called just before cart totals are calculated.
      *
-     * @return void
+     * @return mixed
      */
     public function handle(CartLine $cartLine, Closure $next)
     {
@@ -39,6 +39,12 @@ class GetUnitPrice
 
         $cartLine->unitPrice = new Price(
             $priceResponse->matched->price->value,
+            $cart->currency,
+            $purchasable->getUnitQuantity()
+        );
+
+        $cartLine->unitPriceInclTax = new Price(
+            $priceResponse->matched->priceIncTax()->value,
             $cart->currency,
             $purchasable->getUnitQuantity()
         );
