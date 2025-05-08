@@ -19,7 +19,7 @@ class BuyXGetY extends AbstractDiscountType
      */
     public function getName(): string
     {
-        return 'Buy X Get Y';
+        return __('lunarpanel::discount.form.buy_x_get_y.heading');
     }
 
     /**
@@ -165,7 +165,6 @@ class BuyXGetY extends AbstractDiscountType
             }
 
             $cart->freeItems->push($rewardLine->purchasable);
-
         }
 
         if ($automaticallyAddRewards) {
