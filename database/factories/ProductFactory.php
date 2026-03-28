@@ -4,6 +4,7 @@ namespace Lunar\Database\Factories;
 
 use Lunar\FieldTypes\Text;
 use Lunar\Models\Brand;
+use Lunar\Enums\ProductStatus;
 use Lunar\Models\Product;
 use Lunar\Models\ProductType;
 
@@ -15,7 +16,7 @@ class ProductFactory extends BaseFactory
     {
         return [
             'product_type_id' => ProductType::factory(),
-            'status' => 'published',
+            'status' => ProductStatus::Published,
             'brand_id' => Brand::factory()->create()->id,
             'attribute_data' => collect([
                 'name' => new Text($this->faker->name),

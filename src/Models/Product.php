@@ -27,6 +27,7 @@ use Lunar\Base\Traits\HasUrls;
 use Lunar\Base\Traits\LogsActivity;
 use Lunar\Base\Traits\Searchable;
 use Lunar\Database\Factories\ProductFactory;
+use Lunar\Enums\ProductStatus;
 use Lunar\Jobs\Products\Associations\Associate;
 use Lunar\Jobs\Products\Associations\Dissociate;
 use Spatie\MediaLibrary\HasMedia as SpatieHasMedia;
@@ -35,7 +36,7 @@ use Spatie\MediaLibrary\HasMedia as SpatieHasMedia;
  * @property int $id
  * @property ?int $brand_id
  * @property int $product_type_id
- * @property string $status
+ * @property \Lunar\Enums\ProductStatus $status
  * @property ?\Illuminate\Support\Collection $attribute_data
  * @property ?\Illuminate\Support\Carbon $created_at
  * @property ?\Illuminate\Support\Carbon $updated_at
@@ -83,6 +84,7 @@ class Product extends BaseModel implements Contracts\Product, HasThumbnailImage,
      */
     protected $casts = [
         'attribute_data' => AsAttributeData::class,
+        'status' => ProductStatus::class,
     ];
 
     /**
@@ -189,9 +191,11 @@ class Product extends BaseModel implements Contracts\Product, HasThumbnailImage,
         return $this->belongsTo(Brand::modelClass());
     }
 
-    public function scopeStatus(Builder $query, string $status): Builder
+    public function scopeStatus(Builder $query, ProductStatus|string $status): Builder
     {
-        return $query->whereStatus($status);
+        $value = $status instanceof ProductStatus ? $status->value : $status;
+
+        return $query->where('status', $value);
     }
 
     public function prices(): HasManyThrough
