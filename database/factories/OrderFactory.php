@@ -1,10 +1,11 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\Base\ValueObjects\Cart\TaxBreakdown;
-use Lunar\Models\Channel;
-use Lunar\Models\Order;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\Channel;
+use Lunar\Core\Models\Order;
+use Lunar\Core\ValueObjects\Cart\TaxBreakdown;
 
 class OrderFactory extends BaseFactory
 {
@@ -16,10 +17,10 @@ class OrderFactory extends BaseFactory
         $taxTotal = intval(($total - 100) * .2);
 
         return [
+            'public_id' => (string) Str::ulid(),
             'channel_id' => Channel::factory(),
             'new_customer' => $this->faker->boolean,
             'user_id' => null,
-            'status' => 'awaiting-payment',
             'reference' => $this->faker->unique()->regexify('[A-Z]{8}'),
             'sub_total' => $total - $taxTotal,
             'discount_total' => 0,
@@ -33,5 +34,29 @@ class OrderFactory extends BaseFactory
             'exchange_rate' => 1,
             'meta' => ['foo' => 'bar'],
         ];
+    }
+
+    /**
+     * A placed (live) order.
+     */
+    public function placed(): static
+    {
+        return $this->state(fn () => ['placed_at' => now()]);
+    }
+
+    /**
+     * An open (un-archived) order — the default.
+     */
+    public function open(): static
+    {
+        return $this->state(fn () => ['closed_at' => null]);
+    }
+
+    /**
+     * A closed (archived) order.
+     */
+    public function closed(): static
+    {
+        return $this->state(fn () => ['closed_at' => now()]);
     }
 }

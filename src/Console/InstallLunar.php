@@ -1,25 +1,22 @@
 <?php
 
-namespace Lunar\Console;
+namespace Lunar\Core\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use Lunar\Admin\Models\Staff;
-use Lunar\Facades\DB;
-use Lunar\FieldTypes\TranslatedText;
-use Lunar\Models\Attribute;
-use Lunar\Models\AttributeGroup;
-use Lunar\Models\Channel;
-use Lunar\Models\Collection;
-use Lunar\Models\CollectionGroup;
-use Lunar\Models\Country;
-use Lunar\Models\Currency;
-use Lunar\Models\CustomerGroup;
-use Lunar\Models\Language;
-use Lunar\Models\Product;
-use Lunar\Models\ProductType;
-use Lunar\Models\TaxClass;
-use Lunar\Models\TaxZone;
+use Lunar\Core\Facades\DB;
+use Lunar\Core\Models\Channel;
+use Lunar\Core\Models\CollectionGroup;
+use Lunar\Core\Models\Country;
+use Lunar\Core\Models\Currency;
+use Lunar\Core\Models\CustomerGroup;
+use Lunar\Core\Models\Language;
+use Lunar\Core\Models\Location;
+use Lunar\Core\Models\ProductType;
+use Lunar\Core\Models\Region;
+use Lunar\Core\Models\Staff;
+use Lunar\Core\Models\TaxClass;
+use Lunar\Core\Models\TaxZone;
 
 use function Laravel\Prompts\confirm;
 
@@ -86,6 +83,16 @@ class InstallLunar extends Command
                 ]);
             }
 
+            if (! Location::whereDefault(true)->exists()) {
+                $this->components->info('Setting up default location');
+
+                Location::create([
+                    'name' => 'Default',
+                    'handle' => 'default',
+                    'default' => true,
+                ]);
+            }
+
             if (! Language::count()) {
                 $this->components->info('Adding default language');
 
@@ -143,7 +150,6 @@ class InstallLunar extends Command
                 $taxZone = TaxZone::create([
                     'name' => 'Default Tax Zone',
                     'zone_type' => 'country',
-                    'price_display' => 'tax_exclusive',
                     'default' => true,
                     'active' => true,
                 ]);
@@ -154,131 +160,35 @@ class InstallLunar extends Command
                 );
             }
 
-            if (! Attribute::count()) {
-                $this->components->info('Setting up initial attributes');
-
-                $group = AttributeGroup::create([
-                    'attributable_type' => Product::morphName(),
-                    'name' => collect([
-                        'en' => 'Details',
-                    ]),
-                    'handle' => 'details',
-                    'position' => 1,
-                ]);
-
-                $collectionGroup = AttributeGroup::create([
-                    'attributable_type' => Collection::morphName(),
-                    'name' => collect([
-                        'en' => 'Details',
-                    ]),
-                    'handle' => 'collection_details',
-                    'position' => 1,
-                ]);
-
-                Attribute::create([
-                    'attribute_type' => 'product',
-                    'attribute_group_id' => $group->id,
-                    'position' => 1,
-                    'name' => [
-                        'en' => 'Name',
-                    ],
-                    'handle' => 'name',
-                    'section' => 'main',
-                    'type' => TranslatedText::class,
-                    'required' => true,
-                    'default_value' => null,
-                    'configuration' => [
-                        'richtext' => false,
-                    ],
-                    'system' => true,
-                    'description' => [
-                        'en' => '',
-                    ],
-                ]);
-
-                Attribute::create([
-                    'attribute_type' => 'collection',
-                    'attribute_group_id' => $collectionGroup->id,
-                    'position' => 1,
-                    'name' => [
-                        'en' => 'Name',
-                    ],
-                    'handle' => 'name',
-                    'section' => 'main',
-                    'type' => TranslatedText::class,
-                    'required' => true,
-                    'default_value' => null,
-                    'configuration' => [
-                        'richtext' => false,
-                    ],
-                    'system' => true,
-                    'description' => [
-                        'en' => '',
-                    ],
-                ]);
-
-                Attribute::create([
-                    'attribute_type' => 'product',
-                    'attribute_group_id' => $group->id,
-                    'position' => 2,
-                    'name' => [
-                        'en' => 'Description',
-                    ],
-                    'handle' => 'description',
-                    'section' => 'main',
-                    'type' => TranslatedText::class,
-                    'required' => false,
-                    'default_value' => null,
-                    'configuration' => [
-                        'richtext' => true,
-                    ],
-                    'system' => false,
-                    'description' => [
-                        'en' => '',
-                    ],
-                ]);
-
-                Attribute::create([
-                    'attribute_type' => 'collection',
-                    'attribute_group_id' => $collectionGroup->id,
-                    'position' => 2,
-                    'name' => [
-                        'en' => 'Description',
-                    ],
-                    'handle' => 'description',
-                    'section' => 'main',
-                    'type' => TranslatedText::class,
-                    'required' => false,
-                    'default_value' => null,
-                    'configuration' => [
-                        'richtext' => true,
-                    ],
-                    'system' => false,
-                    'description' => [
-                        'en' => '',
-                    ],
-                ]);
-            }
-
             if (! ProductType::count()) {
                 $this->components->info('Adding a product type.');
 
-                $type = ProductType::create([
+                ProductType::create([
                     'name' => 'Stock',
                 ]);
+            }
 
-                $type->mappedAttributes()->attach(
-                    Attribute::whereAttributeType(
-                        Product::morphName()
-                    )->get()->pluck('id')
-                );
+            if (! Region::whereDefault(true)->exists()) {
+                $this->components->info('Adding a default region.');
+
+                // The default region is the catch-all; specific regions list
+                // their own countries, so it needs none assigned.
+                Region::create([
+                    'name' => 'Default',
+                    'handle' => 'default',
+                    'channel_id' => Channel::whereDefault(true)->value('id'),
+                    'currency_id' => Currency::whereDefault(true)->value('id'),
+                    'language_id' => Language::whereDefault(true)->value('id'),
+                    'tax_zone_id' => TaxZone::whereDefault(true)->value('id'),
+                    'default' => true,
+                ]);
             }
         });
 
         $this->components->info('Publishing Filament assets');
         $this->call('filament:assets');
 
-        $this->components->info('Lunar is now installed 🚀');
+        $this->components->info('Lunar is now installed');
 
         if (confirm('Would you like to show some love by giving us a star on GitHub?')) {
             match (PHP_OS_FAMILY) {

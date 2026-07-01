@@ -1,53 +1,57 @@
 <?php
 
-namespace Lunar\Actions\Carts;
+namespace Lunar\Core\Actions\Carts;
 
 use Illuminate\Support\Collection;
-use Lunar\Base\Addressable;
-use Lunar\DataTypes\Price;
-use Lunar\Facades\Taxes;
-use Lunar\Models\CartLine;
-use Lunar\Models\Contracts\CartLine as CartLineContract;
+use Lunar\Core\Contracts\Actions\Carts\CalculatesLine;
+use Lunar\Core\Contracts\Actions\Carts\CalculatesLineSubtotal;
+use Lunar\Core\Contracts\Addressable;
+use Lunar\Core\Contracts\TaxManager;
+use Lunar\Core\DataObjects\PriceValue;
+use Lunar\Core\Models\CartLine;
 
-class CalculateLine
+class CalculateLine implements CalculatesLine
 {
+    public function __construct(
+        protected CalculatesLineSubtotal $calculatesLineSubtotal,
+        protected TaxManager $taxManager,
+    ) {}
+
     /**
      * Execute the action.
      *
      * @param  \Illuminate\Database\Eloquent\Collection  $customerGroups
-     * @return CartLine
      */
     public function execute(
-        CartLineContract $cartLine,
+        CartLine $cartLine,
         Collection $customerGroups,
         ?Addressable $shippingAddress = null,
         ?Addressable $billingAddress = null
-    ) {
+    ): CartLine {
         /** @var CartLine $cartLine */
         $purchasable = $cartLine->purchasable;
         $cart = $cartLine->cart;
-        $unitQuantity = $purchasable->getUnitQuantity();
 
-        $cartLine = app(CalculateLineSubtotal::class)->execute($cartLine, $customerGroups);
+        $cartLine = $this->calculatesLineSubtotal->execute($cartLine, $customerGroups);
 
         if (! $cartLine->discountTotal) {
-            $cartLine->discountTotal = new Price(0, $cart->currency, $unitQuantity);
+            $cartLine->discountTotal = new PriceValue(0, $cart->currency);
         }
 
-        $subTotal = $cartLine->subTotal->value - $cartLine->discountTotal->value;
+        $subTotal = $cartLine->subTotal->subtract($cartLine->discountTotal);
 
-        $taxBreakDown = Taxes::setShippingAddress($shippingAddress)
+        $taxBreakDown = $this->taxManager->setShippingAddress($shippingAddress)
             ->setBillingAddress($billingAddress)
             ->setCurrency($cart->currency)
             ->setPurchasable($purchasable)
             ->setCartLine($cartLine)
-            ->getBreakdown($subTotal);
+            ->getBreakdown($subTotal->value);
 
-        $taxTotal = $taxBreakDown->amounts->sum('price.value');
+        $taxAmount = PriceValue::sum($taxBreakDown->amounts->pluck('price'), $cart->currency);
 
         $cartLine->taxBreakdown = $taxBreakDown;
-        $cartLine->taxAmount = new Price($taxTotal, $cart->currency, $unitQuantity);
-        $cartLine->total = new Price($subTotal + $taxTotal, $cart->currency, $unitQuantity);
+        $cartLine->taxAmount = $taxAmount;
+        $cartLine->total = $subTotal->add($taxAmount);
 
         return $cartLine;
     }

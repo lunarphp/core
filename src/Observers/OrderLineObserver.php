@@ -1,35 +1,53 @@
 <?php
 
-namespace Lunar\Observers;
+namespace Lunar\Core\Observers;
 
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Lunar\Base\Purchasable;
-use Lunar\Exceptions\NonPurchasableItemException;
-use Lunar\Models\Contracts\OrderLine as OrderLineContract;
-use Lunar\Models\OrderLine;
+use Lunar\Core\Contracts\Purchasable;
+use Lunar\Core\Exceptions\NonPurchasableItemException;
+use Lunar\Core\Models\OrderLine;
+use Lunar\Core\Validation\Order\OrderLineQuantity;
 
 class OrderLineObserver
 {
+    public function __construct(
+        protected OrderLineQuantity $orderLineQuantity,
+    ) {}
+
     /**
      * Handle the OrderLine "creating" event.
      */
-    public function creating(OrderLineContract $orderLine): void
+    public function creating(OrderLine $orderLine): void
+    {
+        $this->assertPurchasable($orderLine);
+    }
+
+    /**
+     * Handle the OrderLine "updating" event.
+     */
+    public function updating(OrderLine $orderLine): void
     {
         /** @var OrderLine $orderLine */
-        $purchasableModel = class_exists($orderLine->purchasable_type) ?
-            $orderLine->purchasable_type :
-            Relation::getMorphedModel($orderLine->purchasable_type);
+        $this->assertPurchasable($orderLine);
 
-        if (! $purchasableModel || ! in_array(Purchasable::class, class_implements($purchasableModel, true))) {
-            throw new NonPurchasableItemException($purchasableModel);
+        // The line's quantity may not drop below what fulfilments already
+        // cover (the section A invariant, protected from the order-line side).
+        if ($orderLine->isDirty('quantity')) {
+            $this->orderLineQuantity->validate($orderLine, (int) $orderLine->quantity);
         }
     }
 
     /**
-     * Handle the OrderLine "updated" event.
+     * Ensure the order line references a purchasable model.
      */
-    public function updating(OrderLineContract $orderLine): void
+    protected function assertPurchasable(OrderLine $orderLine): void
     {
+        // Self-describing line (shipping, ad-hoc charge) — no morph to validate.
+        if ($orderLine->purchasable_type === null) {
+            return;
+        }
+
+        /** @var OrderLine $orderLine */
         $purchasableModel = class_exists($orderLine->purchasable_type) ?
             $orderLine->purchasable_type :
             Relation::getMorphedModel($orderLine->purchasable_type);

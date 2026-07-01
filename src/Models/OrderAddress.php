@@ -1,20 +1,21 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\Addressable;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\HasPersonalDetails;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\OrderAddressFactory;
+use Lunar\Core\Contracts\Addressable;
+use Lunar\Core\Database\Factories\OrderAddressFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPersonalDetails;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\LogsActivity;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property int $order_id
  * @property ?int $country_id
  * @property ?string $title
@@ -37,11 +38,12 @@ use Lunar\Database\Factories\OrderAddressFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class OrderAddress extends BaseModel implements Addressable, Contracts\OrderAddress
+class OrderAddress extends Base implements Addressable
 {
     use HasFactory;
     use HasMacros;
     use HasPersonalDetails;
+    use HasPublicId;
     use LogsActivity;
 
     /**
@@ -91,11 +93,11 @@ class OrderAddress extends BaseModel implements Addressable, Contracts\OrderAddr
 
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::modelClass());
+        return $this->belongsTo(Order::class);
     }
 
     public function country(): BelongsTo
     {
-        return $this->belongsTo(Country::modelClass());
+        return $this->belongsTo(Country::class);
     }
 }

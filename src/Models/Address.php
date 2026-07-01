@@ -1,18 +1,19 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\Addressable;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Database\Factories\AddressFactory;
+use Lunar\Core\Contracts\Addressable;
+use Lunar\Core\Database\Factories\AddressFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property int $customer_id
  * @property ?string $title
  * @property string $first_name
@@ -36,9 +37,9 @@ use Lunar\Database\Factories\AddressFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class Address extends BaseModel implements Addressable, Contracts\Address
+class Address extends Base implements Addressable
 {
-    use HasFactory, HasMacros;
+    use HasFactory, HasMacros, HasPublicId;
 
     /**
      * Return a new factory instance for the model.
@@ -72,7 +73,7 @@ class Address extends BaseModel implements Addressable, Contracts\Address
      */
     public function country(): BelongsTo
     {
-        return $this->belongsTo(Country::modelClass());
+        return $this->belongsTo(Country::class);
     }
 
     /**

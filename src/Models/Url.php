@@ -1,18 +1,20 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Database\Factories\UrlFactory;
+use Lunar\Core\Database\Factories\UrlFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\InvalidatesRelatedCache;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property int $language_id
  * @property string $element_type
  * @property int $element_id
@@ -21,10 +23,12 @@ use Lunar\Database\Factories\UrlFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class Url extends BaseModel implements Contracts\Url
+class Url extends Base
 {
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
+    use InvalidatesRelatedCache;
 
     /**
      * Return a new factory instance for the model.
@@ -59,12 +63,19 @@ class Url extends BaseModel implements Contracts\Url
         return $this->morphTo();
     }
 
+    public function cacheInvalidationTargets(): iterable
+    {
+        $this->loadMissing('element');
+
+        return [$this->element];
+    }
+
     /**
      * Return the language relationship.
      */
     public function language(): BelongsTo
     {
-        return $this->belongsTo(Language::modelClass());
+        return $this->belongsTo(Language::class);
     }
 
     /**

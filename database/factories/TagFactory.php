@@ -1,8 +1,9 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\Models\Tag;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\Tag;
 
 class TagFactory extends BaseFactory
 {
@@ -11,6 +12,7 @@ class TagFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'value' => $this->faker->word,
         ];
     }

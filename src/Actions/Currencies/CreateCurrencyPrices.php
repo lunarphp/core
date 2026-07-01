@@ -1,20 +1,21 @@
 <?php
 
-namespace Lunar\Actions\Currencies;
+namespace Lunar\Core\Actions\Currencies;
 
 use Illuminate\Support\Facades\DB;
-use Lunar\Models\Contracts\Currency;
+use Lunar\Core\Contracts\Actions\Currencies\CreatesCurrencyPrices;
+use Lunar\Core\Models\Currency;
 
-class CreateCurrencyPrices
+class CreateCurrencyPrices implements CreatesCurrencyPrices
 {
-    public function handle(Currency $incomingCurrency, Currency $baseCurrency)
+    public function execute(Currency $incomingCurrency, Currency $baseCurrency): void
     {
         $tablePrefix = config('lunar.database.table_prefix');
 
         $basePrices = DB::table($tablePrefix.'prices')
             ->select(
                 DB::raw('ROUND(price * '.$incomingCurrency->exchange_rate.') as price'),
-                DB::raw('ROUND(compare_price * '.$incomingCurrency->exchange_rate.') as compare_price'),
+                DB::raw('ROUND(list_price * '.$incomingCurrency->exchange_rate.') as list_price'),
                 'priceable_type',
                 'customer_group_id',
                 'min_quantity',
@@ -27,7 +28,7 @@ class CreateCurrencyPrices
 
         DB::table($tablePrefix.'prices')->insertUsing([
             'price',
-            'compare_price',
+            'list_price',
             'priceable_type',
             'customer_group_id',
             'min_quantity',

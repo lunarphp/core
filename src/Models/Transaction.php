@@ -1,21 +1,23 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Casts\Price;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\TransactionFactory;
-use Lunar\Facades\Payments;
+use Lunar\Core\Contracts\HasCurrency;
+use Lunar\Core\Database\Factories\TransactionFactory;
+use Lunar\Core\Facades\Payments;
+use Lunar\Core\Models\Concerns\FormatsPrices;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\LogsActivity;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property ?int $parent_transaction_id
  * @property int $order_id
  * @property bool $success
@@ -30,12 +32,13 @@ use Lunar\Facades\Payments;
  * @property ?array $meta
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
- * @property ?Carbon $deleted_at
  */
-class Transaction extends BaseModel implements Contracts\Transaction
+class Transaction extends Base implements HasCurrency
 {
+    use FormatsPrices;
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
     use LogsActivity;
 
     /**
@@ -48,9 +51,16 @@ class Transaction extends BaseModel implements Contracts\Transaction
      */
     protected $casts = [
         'refund' => 'bool',
-        'amount' => Price::class,
+        'amount' => 'integer',
         'meta' => AsArrayObject::class,
     ];
+
+    public function resolveCurrency(): Currency
+    {
+        $this->loadMissing('order.currency');
+
+        return $this->order?->currency ?? Currency::getDefault();
+    }
 
     /**
      * Return a new factory instance for the model.
@@ -65,7 +75,7 @@ class Transaction extends BaseModel implements Contracts\Transaction
      */
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::modelClass());
+        return $this->belongsTo(Order::class);
     }
 
     /**
@@ -74,8 +84,8 @@ class Transaction extends BaseModel implements Contracts\Transaction
     public function currency(): HasOneThrough
     {
         return $this->hasOneThrough(
-            Currency::modelClass(),
-            Order::modelClass(),
+            Currency::class,
+            Order::class,
             'id',
             'code',
             'order_id',

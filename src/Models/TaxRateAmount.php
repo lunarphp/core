@@ -1,26 +1,28 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Database\Factories\TaxRateAmountFactory;
+use Lunar\Core\Database\Factories\TaxRateAmountFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property ?int $tax_class_id
  * @property ?int $tax_rate_id
  * @property float $percentage
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class TaxRateAmount extends BaseModel implements Contracts\TaxRateAmount
+class TaxRateAmount extends Base
 {
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
 
     /**
      * The tax rate amount.
@@ -50,7 +52,7 @@ class TaxRateAmount extends BaseModel implements Contracts\TaxRateAmount
      */
     public function taxRate(): BelongsTo
     {
-        return $this->belongsTo(TaxRate::modelClass());
+        return $this->belongsTo(TaxRate::class);
     }
 
     /**
@@ -58,6 +60,6 @@ class TaxRateAmount extends BaseModel implements Contracts\TaxRateAmount
      */
     public function taxClass(): BelongsTo
     {
-        return $this->belongsTo(TaxClass::modelClass());
+        return $this->belongsTo(TaxClass::class);
     }
 }

@@ -1,9 +1,10 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\Models\Order;
-use Lunar\Models\Transaction;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\Order;
+use Lunar\Core\Models\Transaction;
 
 class TransactionFactory extends BaseFactory
 {
@@ -12,6 +13,7 @@ class TransactionFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'order_id' => Order::factory(),
             'success' => true,
             'type' => $this->faker->boolean(85) ? 'capture' : 'refund',

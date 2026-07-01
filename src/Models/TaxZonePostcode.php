@@ -1,26 +1,28 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Database\Factories\TaxZonePostcodeFactory;
+use Lunar\Core\Database\Factories\TaxZonePostcodeFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property ?int $tax_zone_id
  * @property ?int $country_id
  * @property string $postcode
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class TaxZonePostcode extends BaseModel implements Contracts\TaxZonePostcode
+class TaxZonePostcode extends Base
 {
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
 
     /**
      * Return a new factory instance for the model.
@@ -43,7 +45,7 @@ class TaxZonePostcode extends BaseModel implements Contracts\TaxZonePostcode
      */
     public function taxZone(): BelongsTo
     {
-        return $this->belongsTo(TaxZone::modelClass());
+        return $this->belongsTo(TaxZone::class);
     }
 
     /**
@@ -51,6 +53,6 @@ class TaxZonePostcode extends BaseModel implements Contracts\TaxZonePostcode
      */
     public function country(): BelongsTo
     {
-        return $this->belongsTo(Country::modelClass());
+        return $this->belongsTo(Country::class);
     }
 }

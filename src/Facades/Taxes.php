@@ -1,21 +1,21 @@
 <?php
 
-namespace Lunar\Facades;
+namespace Lunar\Core\Facades;
 
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Facade;
-use Lunar\Base\TaxManagerInterface;
-use Lunar\Managers\TaxManager;
+use Lunar\Core\Contracts\TaxManager;
 
 /**
  * @method static void createSystemDriver()
  * @method static mixed buildProvider(string $provider)
  * @method static void getDefaultDriver()
  * @method static mixed driver(string|null $driver = null)
- * @method static \Lunar\Managers\TaxManager extend(string $driver, \Closure $callback)
+ * @method static \Lunar\Core\Managers\TaxManager extend(string $driver, \Closure $callback)
  * @method static array getDrivers()
- * @method static \Illuminate\Contracts\Container\Container getContainer()
- * @method static \Lunar\Managers\TaxManager setContainer(\Illuminate\Contracts\Container\Container $container)
- * @method static \Lunar\Managers\TaxManager forgetDrivers()
+ * @method static Container getContainer()
+ * @method static \Lunar\Core\Managers\TaxManager setContainer(Container $container)
+ * @method static \Lunar\Core\Managers\TaxManager forgetDrivers()
  *
  * @see TaxManager
  */
@@ -23,6 +23,6 @@ class Taxes extends Facade
 {
     public static function getFacadeAccessor()
     {
-        return TaxManagerInterface::class;
+        return TaxManager::class;
     }
 }

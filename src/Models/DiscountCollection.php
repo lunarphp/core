@@ -1,13 +1,12 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Lunar\Base\BaseModel;
-use Lunar\Database\Factories\DiscountableFactory;
+use Lunar\Core\Database\Factories\DiscountableFactory;
 
-class DiscountCollection extends BaseModel implements Contracts\DiscountCollection
+class DiscountCollection extends Base
 {
     use HasFactory;
 
@@ -33,11 +32,11 @@ class DiscountCollection extends BaseModel implements Contracts\DiscountCollecti
 
     public function discount(): BelongsTo
     {
-        return $this->belongsTo(Discount::modelClass());
+        return $this->belongsTo(Discount::class);
     }
 
     public function collection(): BelongsTo
     {
-        return $this->belongsTo(Collection::modelClass());
+        return $this->belongsTo(Collection::class);
     }
 }

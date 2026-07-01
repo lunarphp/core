@@ -1,9 +1,9 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
 use Illuminate\Support\Str;
-use Lunar\Models\Customer;
+use Lunar\Core\Models\Customer;
 
 class CustomerFactory extends BaseFactory
 {
@@ -12,6 +12,7 @@ class CustomerFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'title' => $this->faker->title,
             'first_name' => $this->faker->firstName,
             'last_name' => $this->faker->lastName,

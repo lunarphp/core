@@ -1,6 +1,6 @@
 <?php
 
-namespace Lunar\Search;
+namespace Lunar\Core\Search;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -33,8 +33,11 @@ class BrandIndexer extends ScoutIndexer
     {
         return array_merge([
             'id' => (string) $model->id,
-            'name' => $model->name,
+            'public_id' => (string) $model->public_id,
             'created_at' => (int) $model->created_at->timestamp,
-        ], $this->mapSearchableAttributes($model));
+        ],
+            $this->mapTranslatableFields($model, ['name', 'description', 'short_description']),
+            $this->mapSearchableAttributes($model),
+        );
     }
 }

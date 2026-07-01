@@ -1,10 +1,11 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\Models\Language;
-use Lunar\Models\Product;
-use Lunar\Models\Url;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\Language;
+use Lunar\Core\Models\Product;
+use Lunar\Core\Models\Url;
 
 class UrlFactory extends BaseFactory
 {
@@ -13,6 +14,7 @@ class UrlFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'slug' => $this->faker->slug,
             'default' => true,
             'language_id' => Language::factory(),

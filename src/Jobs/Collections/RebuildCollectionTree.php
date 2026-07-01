@@ -1,15 +1,14 @@
 <?php
 
-namespace Lunar\Jobs\Collections;
+namespace Lunar\Core\Jobs\Collections;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Lunar\Facades\DB;
-use Lunar\Models\Collection;
-use Lunar\Models\Contracts\Collection as CollectionContract;
+use Lunar\Core\Facades\DB;
+use Lunar\Core\Models\Collection;
 
 class RebuildCollectionTree implements ShouldQueue
 {
@@ -44,7 +43,7 @@ class RebuildCollectionTree implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(array $newTree, array $currentTree, ?CollectionContract $parent = null)
+    public function __construct(array $newTree, array $currentTree, ?Collection $parent = null)
     {
         $this->newTree = $newTree;
         $this->currentTree = $currentTree;

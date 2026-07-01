@@ -1,26 +1,32 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Casts\Price;
-use Lunar\Base\Casts\TaxBreakdown;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\OrderLineFactory;
+use Lunar\Core\Casts\TaxBreakdown;
+use Lunar\Core\Contracts\HasCurrency;
+use Lunar\Core\Database\Factories\OrderLineFactory;
+use Lunar\Core\Models\Concerns\FormatsPrices;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\LogsActivity;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property int $order_id
  * @property string $purchasable_type
  * @property int $purchasable_id
  * @property string $type
+ * @property bool $requires_shipping
+ * @property bool $requires_fulfilment
  * @property string $description
  * @property ?string $option
  * @property string $identifier
@@ -37,10 +43,12 @@ use Lunar\Database\Factories\OrderLineFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class OrderLine extends BaseModel implements Contracts\OrderLine
+class OrderLine extends Base implements HasCurrency
 {
+    use FormatsPrices;
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
     use LogsActivity;
 
     /**
@@ -65,20 +73,42 @@ class OrderLine extends BaseModel implements Contracts\OrderLine
      * @var array
      */
     protected $casts = [
+        'requires_shipping' => 'boolean',
+        'requires_fulfilment' => 'boolean',
         'unit_quantity' => 'integer',
         'quantity' => 'integer',
         'meta' => AsArrayObject::class,
         'tax_breakdown' => TaxBreakdown::class,
-        'unit_price' => Price::class,
-        'sub_total' => Price::class,
-        'tax_total' => Price::class,
-        'discount_total' => Price::class,
-        'total' => Price::class,
+        'unit_price' => 'integer',
+        'sub_total' => 'integer',
+        'tax_total' => 'integer',
+        'discount_total' => 'integer',
+        'total' => 'integer',
     ];
+
+    public function resolveCurrency(): Currency
+    {
+        $this->loadMissing('order.currency');
+
+        return $this->order?->currency ?? Currency::getDefault();
+    }
 
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::modelClass());
+        return $this->belongsTo(Order::class);
+    }
+
+    public function fulfilmentLines(): HasMany
+    {
+        return $this->hasMany(FulfilmentLine::class);
+    }
+
+    /**
+     * Limit the query to order lines not yet allocated to any fulfilment.
+     */
+    public function scopeWithoutFulfilment(Builder $query): Builder
+    {
+        return $query->whereDoesntHave('fulfilmentLines');
     }
 
     public function purchasable(): MorphTo
@@ -89,8 +119,8 @@ class OrderLine extends BaseModel implements Contracts\OrderLine
     public function currency(): HasOneThrough
     {
         return $this->hasOneThrough(
-            Currency::modelClass(),
-            Order::modelClass(),
+            Currency::class,
+            Order::class,
             'id',
             'code',
             'order_id',

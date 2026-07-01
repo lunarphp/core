@@ -1,13 +1,13 @@
 <?php
 
-namespace Lunar\DiscountTypes;
+namespace Lunar\Core\DiscountTypes;
 
-use Lunar\Base\ValueObjects\Cart\DiscountBreakdown;
-use Lunar\Base\ValueObjects\Cart\DiscountBreakdownLine;
-use Lunar\DataTypes\Price;
-use Lunar\Models\Cart;
-use Lunar\Models\Collection;
-use Lunar\Models\Contracts\Cart as CartContract;
+use Lunar\Core\DataObjects\PriceValue;
+use Lunar\Core\Facades\PriceCalculator;
+use Lunar\Core\Models\Cart;
+use Lunar\Core\Models\Collection;
+use Lunar\Core\ValueObjects\Cart\DiscountBreakdown;
+use Lunar\Core\ValueObjects\Cart\DiscountBreakdownLine;
 
 class AmountOff extends AbstractDiscountType
 {
@@ -22,7 +22,7 @@ class AmountOff extends AbstractDiscountType
     /**
      * Called just before cart totals are calculated.
      */
-    public function apply(CartContract $cart): CartContract
+    public function apply(Cart $cart): Cart
     {
         $data = $this->discount->data;
 
@@ -46,13 +46,10 @@ class AmountOff extends AbstractDiscountType
     /**
      * Apply fixed value discount
      */
-    private function applyFixedValue(array $values, CartContract $cart): CartContract
+    private function applyFixedValue(array $values, Cart $cart): Cart
     {
         $currency = $cart->currency;
-
-        $decimal = ($values[$currency->code] ?? 0) / $currency->factor;
-
-        $value = (int) bcmul($decimal, $currency->factor);
+        $value = (int) ($values[$currency->code] ?? 0);
 
         $lines = $this->getEligibleLines($cart);
 
@@ -64,19 +61,18 @@ class AmountOff extends AbstractDiscountType
             return $cart;
         }
 
-        $divisionalAmount = $value / $linesSubtotal;
+        $weights = $lines
+            ->mapWithKeys(fn ($line, $key) => [$key => ($line->subTotalDiscounted ?? $line->subTotal)->value])
+            ->all();
+
+        $allocations = PriceCalculator::distribute($value, $weights, $currency);
 
         $remaining = $value;
-
         $affectedLines = collect();
 
-        foreach ($lines as $line) {
+        foreach ($lines as $key => $line) {
             $subTotal = ($line->subTotalDiscounted ?? $line->subTotal)->value;
-            $amount = (int) floor($subTotal * $divisionalAmount);
-
-            if ($amount > $subTotal) {
-                $amount = $subTotal;
-            }
+            $amount = min($allocations[$key], $subTotal);
 
             // If this line already has a greater discount value
             // don't add this one as they already have a better deal.
@@ -86,17 +82,10 @@ class AmountOff extends AbstractDiscountType
 
             $remaining -= $amount;
 
-            $line->discountTotal = new Price(
-                $amount,
-                $cart->currency,
-                1
-            );
+            $discountValue = new PriceValue($amount, $currency);
 
-            $line->subTotalDiscounted = new Price(
-                $line->subTotal->value - $amount,
-                $cart->currency,
-                1
-            );
+            $line->discountTotal = $discountValue;
+            $line->subTotalDiscounted = $line->subTotal->subtract($discountValue);
 
             $affectedLines->push(new DiscountBreakdownLine(
                 line: $line,
@@ -104,14 +93,11 @@ class AmountOff extends AbstractDiscountType
             ));
         }
 
-        // Do we have an amount left over? if so, grab the first line that has
-        // enough left to apply the remaining too.
-        if ($remaining) {
-            // prioritise sharing the remaining over eligible lines
-            $lines->filter(function ($line) {
-                return $line->subTotalDiscounted->value > 0;
-            })
-                ->each(function ($line) use ($affectedLines, $cart, &$remaining) {
+        // Any leftover from caps or skipped lines is re-spread across lines
+        // that still have remaining subtotal.
+        if ($remaining > 0) {
+            $lines->filter(fn ($line) => $line->subTotalDiscounted->value > 0)
+                ->each(function ($line) use ($affectedLines, $currency, &$remaining) {
                     if ($remaining <= 0) {
                         return;
                     }
@@ -119,23 +105,12 @@ class AmountOff extends AbstractDiscountType
                     $amountAvailable = min($line->subTotalDiscounted->value, $remaining);
                     $remaining -= $amountAvailable;
 
-                    $newDiscountTotal = $line->discountTotal->value + $amountAvailable;
+                    $newDiscountTotal = new PriceValue($line->discountTotal->value + $amountAvailable, $currency);
 
-                    $line->discountTotal = new Price(
-                        $newDiscountTotal,
-                        $cart->currency,
-                        1
-                    );
+                    $line->discountTotal = $newDiscountTotal;
+                    $line->subTotalDiscounted = $line->subTotal->subtract($newDiscountTotal);
 
-                    $line->subTotalDiscounted = new Price(
-                        $line->subTotal->value - $newDiscountTotal,
-                        $cart->currency,
-                        1
-                    );
-
-                    if (! $affectedLines->first(function ($breakdownLine) use ($line) {
-                        return $breakdownLine->line == $line;
-                    })) {
+                    if (! $affectedLines->first(fn ($breakdownLine) => $breakdownLine->line == $line)) {
                         $affectedLines->push(new DiscountBreakdownLine(
                             line: $line,
                             quantity: $line->quantity
@@ -151,7 +126,7 @@ class AmountOff extends AbstractDiscountType
         $cart->discounts->push($this);
 
         $this->addDiscountBreakdown($cart, new DiscountBreakdown(
-            price: new Price($value - $remaining, $cart->currency, 1),
+            price: new PriceValue($value - $remaining, $currency),
             lines: $affectedLines,
             discount: $this->discount,
         ));
@@ -162,7 +137,7 @@ class AmountOff extends AbstractDiscountType
     /**
      * Return the eligible lines for the discount.
      */
-    protected function getEligibleLines(CartContract $cart): \Illuminate\Support\Collection
+    protected function getEligibleLines(Cart $cart): \Illuminate\Support\Collection
     {
         $collectionIds = $this->discount->collections->where('pivot.type', 'limitation')->pluck('id');
         $collectionExclusionIds = $this->discount->collections->where('pivot.type', 'exclusion')->pluck('id');
@@ -226,7 +201,7 @@ class AmountOff extends AbstractDiscountType
     /**
      * Apply the percentage to the cart line.
      */
-    private function applyPercentage(float $value, CartContract $cart): CartContract
+    private function applyPercentage(float $value, Cart $cart): Cart
     {
         $lines = $this->getEligibleLines($cart);
 
@@ -234,15 +209,10 @@ class AmountOff extends AbstractDiscountType
         $totalDiscount = 0;
 
         foreach ($lines as $line) {
-            $subTotal = $line->subTotal->value;
-            $subTotalDiscounted = $line->subTotalDiscounted?->value ?: 0;
+            $subTotal = $line->subTotalDiscounted ?: $line->subTotal;
             $lineDiscount = $line->discountTotal?->value ?: 0;
 
-            if ($subTotalDiscounted) {
-                $subTotal = $subTotalDiscounted;
-            }
-
-            $amount = (int) round($subTotal * ($value / 100));
+            $amount = PriceCalculator::percentage($subTotal->value, $value / 100, $cart->currency);
 
             // If this line already has a greater discount value
             // don't add this one as they already have a better deal.
@@ -252,17 +222,11 @@ class AmountOff extends AbstractDiscountType
 
             $totalDiscount += $amount;
 
-            $line->discountTotal = new Price(
-                $lineDiscount + $amount,
-                $cart->currency,
-                1
-            );
+            $discountValue = new PriceValue($amount, $cart->currency);
 
-            $line->subTotalDiscounted = new Price(
-                $subTotal - $amount,
-                $cart->currency,
-                1
-            );
+            $line->discountTotal = new PriceValue($lineDiscount + $amount, $cart->currency);
+
+            $line->subTotalDiscounted = $subTotal->subtract($discountValue);
 
             $affectedLines->push(new DiscountBreakdownLine(
                 line: $line,
@@ -281,7 +245,7 @@ class AmountOff extends AbstractDiscountType
         $cart->discounts->push($this);
 
         $this->addDiscountBreakdown($cart, new DiscountBreakdown(
-            price: new Price($totalDiscount, $cart->currency, 1),
+            price: new PriceValue($totalDiscount, $cart->currency),
             lines: $affectedLines,
             discount: $this->discount,
         ));

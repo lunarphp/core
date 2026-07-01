@@ -1,21 +1,19 @@
 <?php
 
-namespace Lunar\Pipelines\Order\Creation;
+namespace Lunar\Core\Pipelines\Order\Creation;
 
 use Closure;
 use Illuminate\Support\Facades\App;
-use Lunar\Models\Contracts\Order as OrderContract;
-use Lunar\Models\Contracts\OrderLine as OrderLineContract;
-use Lunar\Models\Order;
-use Lunar\Models\OrderLine;
-use Lunar\Utils\Arr;
+use Lunar\Core\Models\Order;
+use Lunar\Core\Models\OrderLine;
+use Lunar\Core\Utils\Arr;
 
 class CreateOrderLines
 {
     /**
-     * @param  Closure(OrderContract): mixed  $next
+     * @param  Closure(Order):mixed  $next
      */
-    public function handle(OrderContract $order, Closure $next): mixed
+    public function handle(Order $order, Closure $next): mixed
     {
         /** @var Order $order */
         if (! $order->id) {
@@ -36,13 +34,15 @@ class CreateOrderLines
                     empty($diff->removed) &&
                     $line->purchasable_type == $cartLine->purchasable_type &&
                     $line->purchasable_id == $cartLine->purchasable_id;
-            }) ?: App::make(OrderLineContract::class);
+            }) ?: App::make(OrderLine::class);
 
             $orderLine->fill([
                 'order_id' => $order->id,
                 'purchasable_type' => $cartLine->purchasable_type,
                 'purchasable_id' => $cartLine->purchasable_id,
                 'type' => $cartLine->purchasable->getType(),
+                'requires_shipping' => $cartLine->purchasable->isShippable(),
+                'requires_fulfilment' => $cartLine->purchasable->requiresFulfilment(),
                 'description' => $cartLine->purchasable->getDescription(),
                 'option' => $cartLine->purchasable->getOption(),
                 'identifier' => $cartLine->purchasable->getIdentifier(),

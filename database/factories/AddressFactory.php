@@ -1,9 +1,10 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\Models\Address;
-use Lunar\Models\Country;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\Address;
+use Lunar\Core\Models\Country;
 
 class AddressFactory extends BaseFactory
 {
@@ -12,6 +13,7 @@ class AddressFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'country_id' => Country::factory(),
             'title' => $this->faker->title,
             'first_name' => $this->faker->firstName,

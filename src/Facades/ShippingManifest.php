@@ -1,20 +1,22 @@
 <?php
 
-namespace Lunar\Facades;
+namespace Lunar\Core\Facades;
 
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
-use Lunar\Base\ShippingManifestInterface;
+use Lunar\Core\DataTypes\ShippingOption;
+use Lunar\Core\Models\Cart;
 
 /**
- * @method static void addOption(\Lunar\DataTypes\ShippingOption $option)
- * @method static void addOptions(\Illuminate\Support\Collection $options)
+ * @method static void addOption(ShippingOption $option)
+ * @method static void addOptions(Collection $options)
  * @method static void clearOptions()
- * @method static \Lunar\Base\ShippingManifest getOptionUsing(\Closure $closure)
- * @method static \Illuminate\Support\Collection getOptions(\Lunar\Models\Contracts\Cart $cart)
- * @method static \Lunar\DataTypes\ShippingOption|null getOption(\Lunar\Models\Contracts\Cart $cart, string $identifier)
- * @method static \Lunar\DataTypes\ShippingOption|null getShippingOption(\Lunar\Models\Contracts\Cart $cart)
+ * @method static \Lunar\Core\Manifests\ShippingManifest getOptionUsing(\Closure $closure)
+ * @method static Collection getOptions(Cart $cart)
+ * @method static ShippingOption|null getOption(Cart $cart, string $identifier)
+ * @method static ShippingOption|null getShippingOption(Cart $cart)
  *
- * @see \Lunar\Base\ShippingManifest
+ * @see \Lunar\Core\Manifests\ShippingManifest
  */
 class ShippingManifest extends Facade
 {
@@ -23,6 +25,6 @@ class ShippingManifest extends Facade
      */
     protected static function getFacadeAccessor()
     {
-        return ShippingManifestInterface::class;
+        return \Lunar\Core\Contracts\ShippingManifest::class;
     }
 }

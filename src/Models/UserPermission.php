@@ -1,12 +1,11 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
+use Lunar\Core\Models\Concerns\HasMacros;
 
-class UserPermission extends BaseModel implements Contracts\UserPermission
+class UserPermission extends Base
 {
     use HasMacros;
 

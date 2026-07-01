@@ -1,16 +1,16 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Enums\Concerns\ProvidesProductAssociationType;
-use Lunar\Base\Enums\ProductAssociation as ProductAssociationEnum;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Database\Factories\ProductAssociationFactory;
+use Lunar\Core\Database\Factories\ProductAssociationFactory;
+use Lunar\Core\Enums\Concerns\ProvidesProductAssociationType;
+use Lunar\Core\Enums\ProductAssociation as ProductAssociationEnum;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\InvalidatesRelatedCache;
 
 /**
  * @property int $id
@@ -20,10 +20,11 @@ use Lunar\Database\Factories\ProductAssociationFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class ProductAssociation extends BaseModel implements Contracts\ProductAssociation
+class ProductAssociation extends Base
 {
     use HasFactory;
     use HasMacros;
+    use InvalidatesRelatedCache;
 
     /**
      * Define the cross-sell type.
@@ -73,7 +74,7 @@ class ProductAssociation extends BaseModel implements Contracts\ProductAssociati
      */
     public function parent(): BelongsTo
     {
-        return $this->belongsTo(Product::modelClass(), 'product_parent_id')->withTrashed();
+        return $this->belongsTo(Product::class, 'product_parent_id');
     }
 
     /**
@@ -81,7 +82,14 @@ class ProductAssociation extends BaseModel implements Contracts\ProductAssociati
      */
     public function target(): BelongsTo
     {
-        return $this->belongsTo(Product::modelClass(), 'product_target_id')->withTrashed();
+        return $this->belongsTo(Product::class, 'product_target_id');
+    }
+
+    public function cacheInvalidationTargets(): iterable
+    {
+        $this->loadMissing(['parent', 'target']);
+
+        return [$this->parent, $this->target];
     }
 
     /**

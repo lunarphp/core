@@ -1,12 +1,12 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
 use Illuminate\Support\Str;
-use Lunar\Base\ValueObjects\Cart\TaxBreakdown;
-use Lunar\Models\Order;
-use Lunar\Models\OrderLine;
-use Lunar\Models\ProductVariant;
+use Lunar\Core\Models\Order;
+use Lunar\Core\Models\OrderLine;
+use Lunar\Core\Models\ProductVariant;
+use Lunar\Core\ValueObjects\Cart\TaxBreakdown;
 
 class OrderLineFactory extends BaseFactory
 {
@@ -15,10 +15,15 @@ class OrderLineFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'order_id' => Order::factory(),
             'purchasable_type' => ProductVariant::morphName(),
             'purchasable_id' => ProductVariant::factory(),
             'type' => 'physical',
+            'requires_shipping' => fn (array $attributes) => ($attributes['type'] ?? 'physical') === 'physical',
+            // Defaults to its requires_shipping value so existing tests (and an
+            // explicit requires_shipping override) keep behaving as before.
+            'requires_fulfilment' => fn (array $attributes) => $attributes['requires_shipping'] ?? (($attributes['type'] ?? 'physical') === 'physical'),
             'description' => $this->faker->sentence,
             'option' => $this->faker->word,
             'identifier' => Str::random(),

@@ -1,11 +1,11 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\FieldTypes\Text;
-use Lunar\Models\Brand;
-use Lunar\Models\Product;
-use Lunar\Models\ProductType;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\Brand;
+use Lunar\Core\Models\Product;
+use Lunar\Core\Models\ProductType;
 
 class ProductFactory extends BaseFactory
 {
@@ -14,13 +14,14 @@ class ProductFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'product_type_id' => ProductType::factory(),
             'status' => 'published',
             'brand_id' => Brand::factory()->create()->id,
-            'attribute_data' => collect([
-                'name' => new Text($this->faker->name),
-                'description' => new Text($this->faker->sentence),
-            ]),
+            'name' => collect(['en' => $this->faker->words(3, true)]),
+            'description' => collect(['en' => $this->faker->paragraph]),
+            'short_description' => collect(['en' => $this->faker->sentence]),
+            'attribute_data' => collect(),
         ];
     }
 }

@@ -1,18 +1,17 @@
 <?php
 
-namespace Lunar\Pipelines\Order\Creation;
+namespace Lunar\Core\Pipelines\Order\Creation;
 
 use Closure;
-use Lunar\Models\Contracts\Order as OrderContract;
-use Lunar\Models\Order;
-use Lunar\Utils\Arr;
+use Lunar\Core\Models\Order;
+use Lunar\Core\Utils\Arr;
 
 class MapDiscountBreakdown
 {
     /**
-     * @param  Closure(OrderContract): mixed  $next
+     * @param  Closure(Order):mixed  $next
      */
-    public function handle(OrderContract $order, Closure $next): mixed
+    public function handle(Order $order, Closure $next): mixed
     {
         /** @var Order $order */
         $cart = $order->cart;

@@ -1,38 +1,34 @@
 <?php
 
-namespace Lunar\Pipelines\Cart;
+namespace Lunar\Core\Pipelines\Cart;
 
 use Closure;
-use Lunar\DataTypes\Price;
-use Lunar\Models\Cart;
-use Lunar\Models\Contracts\Cart as CartContract;
+use Lunar\Core\DataObjects\PriceValue;
+use Lunar\Core\Models\Cart;
 
 class Calculate
 {
     /**
      * Called just before cart totals are calculated.
      *
-     * @param  Closure(CartContract): mixed  $next
+     * @param  Closure(Cart):mixed  $next
      */
-    public function handle(CartContract $cart, Closure $next): mixed
+    public function handle(Cart $cart, Closure $next): mixed
     {
         /** @var Cart $cart */
-        $discountTotal = $cart->lines->sum('discountTotal.value');
+        $currency = $cart->currency;
 
-        $subTotal = $cart->lines->sum('subTotal.value');
+        $cart->subTotal = PriceValue::sum($cart->lines->pluck('subTotal'), $currency);
+        $cart->subTotalDiscounted = PriceValue::sum(
+            $cart->lines->map(fn ($line) => $line->subTotalDiscounted ?: $line->subTotal),
+            $currency,
+        );
+        $cart->discountTotal = PriceValue::sum($cart->lines->pluck('discountTotal'), $currency);
 
-        $total = $cart->lines->sum('total.value') + $cart->shippingTotal?->value;
-
-        $subTotalDiscounted = $cart->lines->sum(function ($line) {
-            return $line->subTotalDiscounted ?
-                $line->subTotalDiscounted->value :
-                $line->subTotal->value;
-        });
-
-        $cart->subTotal = new Price($subTotal, $cart->currency, 1);
-        $cart->subTotalDiscounted = new Price($subTotalDiscounted, $cart->currency, 1);
-        $cart->discountTotal = new Price($discountTotal, $cart->currency, 1);
-        $cart->total = new Price($total, $cart->currency, 1);
+        $linesTotal = PriceValue::sum($cart->lines->pluck('total'), $currency);
+        $cart->total = $cart->shippingTotal
+            ? $linesTotal->add($cart->shippingTotal)
+            : $linesTotal;
 
         return $next($cart);
     }

@@ -1,10 +1,10 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\FieldTypes\Text;
-use Lunar\Models\Collection;
-use Lunar\Models\CollectionGroup;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\Collection;
+use Lunar\Core\Models\CollectionGroup;
 
 class CollectionFactory extends BaseFactory
 {
@@ -13,10 +13,12 @@ class CollectionFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'collection_group_id' => CollectionGroup::factory(),
-            'attribute_data' => collect([
-                'name' => new Text($this->faker->name),
-            ]),
+            'name' => collect(['en' => $this->faker->words(3, true)]),
+            'description' => collect(['en' => $this->faker->paragraph]),
+            'short_description' => collect(['en' => $this->faker->sentence]),
+            'attribute_data' => collect(),
         ];
     }
 }

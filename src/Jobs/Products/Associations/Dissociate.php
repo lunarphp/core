@@ -1,6 +1,6 @@
 <?php
 
-namespace Lunar\Jobs\Products\Associations;
+namespace Lunar\Core\Jobs\Products\Associations;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -8,11 +8,10 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Enums\Concerns\ProvidesProductAssociationType;
-use Lunar\Facades\DB;
-use Lunar\Models\Contracts\Product as ProductContract;
-use Lunar\Models\Product;
+use Lunar\Core\Enums\Concerns\ProvidesProductAssociationType;
+use Lunar\Core\Facades\DB;
+use Lunar\Core\Models\Base;
+use Lunar\Core\Models\Product;
 
 class Dissociate implements ShouldQueue
 {
@@ -33,7 +32,7 @@ class Dissociate implements ShouldQueue
     /**
      * The parent product instance.
      */
-    protected ProductContract $product;
+    protected Product $product;
 
     /**
      * The SKU for the generated variant.
@@ -45,7 +44,7 @@ class Dissociate implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(ProductContract $product, Collection|BaseModel|array $targets, ProvidesProductAssociationType|string|null $type = null)
+    public function __construct(Product $product, Collection|Base|array $targets, ProvidesProductAssociationType|string|null $type = null)
     {
         if (is_array($targets)) {
             $targets = collect($targets);
@@ -68,7 +67,7 @@ class Dissociate implements ShouldQueue
     public function handle()
     {
         DB::transaction(function () {
-            $query = $this->product->associations()->whereIn(
+            $associations = $this->product->associations()->whereIn(
                 'product_target_id',
                 $this->targets->pluck('id')
             )->when(
@@ -77,9 +76,11 @@ class Dissociate implements ShouldQueue
                     'type',
                     is_string($this->type) ? $this->type : $this->type->value
                 )
-            );
+            )->get();
 
-            $query->delete();
+            // Delete per-model so the deleted event fires and cache invalidation
+            // (both products) cascades; a bulk delete() would bypass it.
+            $associations->each->delete();
         });
     }
 }

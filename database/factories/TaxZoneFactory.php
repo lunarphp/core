@@ -1,8 +1,9 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\Models\TaxZone;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\TaxZone;
 
 class TaxZoneFactory extends BaseFactory
 {
@@ -11,9 +12,9 @@ class TaxZoneFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'name' => $this->faker->name,
             'zone_type' => $this->faker->randomElement(['country', 'postcode', 'state']),
-            'price_display' => $this->faker->randomElement(['tax_inclusive', 'tax_exclusive']),
             'active' => true,
             'default' => true,
         ];

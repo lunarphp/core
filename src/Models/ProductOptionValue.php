@@ -1,21 +1,23 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\HasMedia;
-use Lunar\Base\Traits\HasTranslations;
-use Lunar\Database\Factories\ProductOptionValueFactory;
+use Lunar\Core\Database\Factories\ProductOptionValueFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasMedia;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\HasTranslations;
+use Lunar\Core\Models\Concerns\InvalidatesRelatedCache;
 use Spatie\MediaLibrary\HasMedia as SpatieHasMedia;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property int $product_option_id
  * @property AsArrayObject $name
  * @property int $position
@@ -23,12 +25,14 @@ use Spatie\MediaLibrary\HasMedia as SpatieHasMedia;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class ProductOptionValue extends BaseModel implements Contracts\ProductOptionValue, SpatieHasMedia
+class ProductOptionValue extends Base implements SpatieHasMedia
 {
     use HasFactory;
     use HasMacros;
     use HasMedia;
+    use HasPublicId;
     use HasTranslations;
+    use InvalidatesRelatedCache;
 
     /**
      * Define which attributes should be cast.
@@ -58,7 +62,14 @@ class ProductOptionValue extends BaseModel implements Contracts\ProductOptionVal
 
     public function option(): BelongsTo
     {
-        return $this->belongsTo(ProductOption::modelClass(), 'product_option_id');
+        return $this->belongsTo(ProductOption::class, 'product_option_id');
+    }
+
+    public function cacheInvalidationTargets(): iterable
+    {
+        $this->loadMissing('option');
+
+        return [$this->option];
     }
 
     public function variants(): BelongsToMany
@@ -66,7 +77,7 @@ class ProductOptionValue extends BaseModel implements Contracts\ProductOptionVal
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            ProductVariant::modelClass(),
+            ProductVariant::class,
             "{$prefix}product_option_value_product_variant",
             'value_id',
             'variant_id',

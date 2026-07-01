@@ -1,34 +1,42 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Casts\Price as CastsPrice;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Database\Factories\PriceFactory;
-use Lunar\Models\Contracts\TaxZone as TaxZoneContract;
+use Lunar\Core\Contracts\HasCurrency;
+use Lunar\Core\Database\Factories\PriceFactory;
+use Lunar\Core\DataObjects\PriceValue;
+use Lunar\Core\Facades\PriceCalculator;
+use Lunar\Core\Models\Concerns\FormatsPrices;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\InvalidatesRelatedCache;
+use Lunar\Core\Pricing\PriceFormatterInterface;
 use Spatie\LaravelBlink\BlinkFacade as Blink;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property ?int $customer_group_id
  * @property ?int $currency_id
  * @property string $priceable_type
  * @property int $priceable_id
- * @property \Lunar\DataTypes\Price $price
- * @property ?int $compare_price
+ * @property int $price
+ * @property ?int $list_price
  * @property int $min_quantity
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class Price extends BaseModel implements Contracts\Price
+class Price extends Base implements HasCurrency
 {
+    use FormatsPrices;
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
+    use InvalidatesRelatedCache;
 
     /**
      * Return a new factory instance for the model.
@@ -47,8 +55,8 @@ class Price extends BaseModel implements Contracts\Price
     protected $guarded = [];
 
     protected $casts = [
-        'price' => CastsPrice::class,
-        'compare_price' => CastsPrice::class,
+        'price' => 'integer',
+        'list_price' => 'integer',
     ];
 
     /**
@@ -57,6 +65,19 @@ class Price extends BaseModel implements Contracts\Price
     public function priceable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function cacheInvalidationTargets(): iterable
+    {
+        $priceable = $this->loadMissing('priceable')->priceable;
+
+        if ($priceable instanceof ProductVariant) {
+            $priceable->loadMissing('product');
+
+            return [$priceable->product];
+        }
+
+        return [$priceable];
     }
 
     /**
@@ -75,22 +96,78 @@ class Price extends BaseModel implements Contracts\Price
         return $this->belongsTo(CustomerGroup::class);
     }
 
+    public function resolveCurrency(): Currency
+    {
+        $this->loadMissing('currency');
+
+        return $this->currency ?? Currency::getDefault();
+    }
+
+    /**
+     * Format the given money column divided by the priceable's
+     * `unit_quantity` — e.g. display the per-single-unit figure for a
+     * pack price stored against a variant with `unit_quantity > 1`.
+     */
+    public function unitFormat(string $field, ?string $locale = null, ?int $decimalPlaces = null, bool $trimTrailingZeros = true): ?string
+    {
+        $value = $this->getAttribute($field);
+
+        if ($value === null) {
+            return null;
+        }
+
+        return app(PriceFormatterInterface::class, [
+            'value' => (int) $value,
+            'currency' => $this->resolveCurrency(),
+            'unitQty' => $this->resolvePriceableUnitQuantity(),
+        ])->unitFormatted($locale, decimalPlaces: $decimalPlaces, trimTrailingZeros: $trimTrailingZeros);
+    }
+
+    /**
+     * Decimal form of {@see unitFormat()} — the per-single-unit value of
+     * the given money column in the priceable's currency, as a float.
+     */
+    public function unitDecimal(string $field, bool $rounding = true): ?float
+    {
+        $value = $this->getAttribute($field);
+
+        if ($value === null) {
+            return null;
+        }
+
+        return app(PriceFormatterInterface::class, [
+            'value' => (int) $value,
+            'currency' => $this->resolveCurrency(),
+            'unitQty' => $this->resolvePriceableUnitQuantity(),
+        ])->unitDecimal($rounding);
+    }
+
+    private function resolvePriceableUnitQuantity(): int
+    {
+        $this->loadMissing('priceable');
+
+        return (int) ($this->priceable->unit_quantity ?? 1);
+    }
+
     /**
      * Return the price exclusive of tax.
      *
      * @param  TaxZone|null  $taxZone  Optional override for the tax zone. Falls back to the store's default zone.
      */
-    public function priceExTax(?TaxZoneContract $taxZone = null): \Lunar\DataTypes\Price
+    public function priceExTax(?TaxZone $taxZone = null): PriceValue
     {
-        if (! prices_inc_tax()) {
-            return $this->price;
+        $value = (int) $this->price;
+        $currency = $this->resolveCurrency();
+
+        if (prices_inc_tax()) {
+            $value = PriceCalculator::withoutTax(
+                $value,
+                (float) $this->getPriceableTaxRate($taxZone),
+                $currency,
+            );
         }
 
-        $priceExTax = clone $this->price;
-
-        $priceExTax->value = (int) round($priceExTax->value / (1 + $this->getPriceableTaxRate($taxZone)));
-
-        return $priceExTax;
+        return new PriceValue($value, $currency);
     }
 
     /**
@@ -98,33 +175,41 @@ class Price extends BaseModel implements Contracts\Price
      *
      * @param  TaxZone|null  $taxZone  Optional override for the tax zone.
      */
-    public function priceIncTax(?TaxZoneContract $taxZone = null): int|\Lunar\DataTypes\Price
+    public function priceIncTax(?TaxZone $taxZone = null): PriceValue
     {
-        if (prices_inc_tax()) {
-            return $this->price;
+        $value = (int) $this->price;
+        $currency = $this->resolveCurrency();
+
+        if (! prices_inc_tax()) {
+            $value = PriceCalculator::withTax(
+                $value,
+                (float) $this->getPriceableTaxRate($taxZone),
+                $currency,
+            );
         }
 
-        $priceIncTax = clone $this->price;
-        $priceIncTax->value = (int) round($priceIncTax->value * (1 + $this->getPriceableTaxRate($taxZone)));
-
-        return $priceIncTax;
+        return new PriceValue($value, $currency);
     }
 
     /**
-     * Return the compare price inclusive of tax.
+     * Return the list price inclusive of tax.
      *
      * @param  TaxZone|null  $taxZone  Optional override for the tax zone.
      */
-    public function comparePriceIncTax(?TaxZoneContract $taxZone = null): int|\Lunar\DataTypes\Price
+    public function listPriceIncTax(?TaxZone $taxZone = null): PriceValue
     {
-        if (prices_inc_tax()) {
-            return $this->compare_price;
+        $value = (int) $this->list_price;
+        $currency = $this->resolveCurrency();
+
+        if (! prices_inc_tax()) {
+            $value = PriceCalculator::withTax(
+                $value,
+                (float) $this->getPriceableTaxRate($taxZone),
+                $currency,
+            );
         }
 
-        $comparePriceIncTax = clone $this->compare_price;
-        $comparePriceIncTax->value = (int) round($comparePriceIncTax->value * (1 + $this->getPriceableTaxRate($taxZone)));
-
-        return $comparePriceIncTax;
+        return new PriceValue($value, $currency);
     }
 
     /**
@@ -134,7 +219,7 @@ class Price extends BaseModel implements Contracts\Price
      * Tax zone resolution: explicit param → store default zone.
      * Results are memoised per "{classId}_{zoneId}" so unrelated combinations never collide.
      */
-    protected function getPriceableTaxRate(?TaxZoneContract $taxZone = null): int|float
+    protected function getPriceableTaxRate(?TaxZone $taxZone = null): int|float
     {
         $taxClass = $this->priceable->getTaxClass();
         $taxZone ??= Blink::once('lunar_default_tax_zone', fn () => TaxZone::where('default', '=', 1)->first());
@@ -142,6 +227,9 @@ class Price extends BaseModel implements Contracts\Price
 
         return Blink::once($cacheKey, function () use ($taxClass, $taxZone) {
             if ($taxZone && $taxClass) {
+                $taxClass->loadMissing('taxRateAmounts');
+                $taxZone->loadMissing('taxRates');
+
                 return $taxClass->taxRateAmounts
                     ->whereIn('tax_rate_id', $taxZone->taxRates->pluck('id'))
                     ->sum('percentage') / 100;

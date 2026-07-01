@@ -1,16 +1,15 @@
 <?php
 
-namespace Lunar\Jobs\Collections;
+namespace Lunar\Core\Jobs\Collections;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Lunar\Actions\Collections\SortProducts;
-use Lunar\Facades\DB;
-use Lunar\Models\Collection;
-use Lunar\Models\Contracts\Collection as CollectionContract;
+use Lunar\Core\Contracts\Actions\Collections\SortsProducts;
+use Lunar\Core\Facades\DB;
+use Lunar\Core\Models\Collection;
 
 class UpdateProductPositions implements ShouldQueue
 {
@@ -24,12 +23,12 @@ class UpdateProductPositions implements ShouldQueue
     /**
      * The target collection.
      */
-    public CollectionContract $collection;
+    public Collection $collection;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(CollectionContract $collection)
+    public function __construct(Collection $collection)
     {
         $this->collection = $collection;
     }
@@ -41,7 +40,7 @@ class UpdateProductPositions implements ShouldQueue
         }
 
         DB::transaction(function () {
-            $products = app(SortProducts::class)->execute($this->collection);
+            $products = app(SortsProducts::class)->execute($this->collection);
             $productSync = $products->values()->mapWithKeys(function ($product, $index) {
                 return [
                     $product->id => [

@@ -1,39 +1,48 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
+use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Casts\AsAttributeData;
-use Lunar\Base\Traits\HasAttributes;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\HasMedia;
-use Lunar\Base\Traits\HasTranslations;
-use Lunar\Base\Traits\HasUrls;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Base\Traits\Searchable;
-use Lunar\Database\Factories\BrandFactory;
-use Lunar\Facades\DB;
+use Lunar\Core\Contracts\CacheInvalidationEvent;
+use Lunar\Core\Database\Factories\BrandFactory;
+use Lunar\Core\Enums\CacheInvalidationReason;
+use Lunar\Core\Events\Catalog\BrandInvalidated;
+use Lunar\Core\Facades\DB;
+use Lunar\Core\Models\Concerns\HasAttributeData;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasMedia;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\HasTranslations;
+use Lunar\Core\Models\Concerns\HasUrls;
+use Lunar\Core\Models\Concerns\InvalidatesCache;
+use Lunar\Core\Models\Concerns\LogsActivity;
+use Lunar\Core\Models\Concerns\Searchable;
 use Spatie\MediaLibrary\HasMedia as SpatieHasMedia;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
+ * @property ?\Illuminate\Support\Collection $description
+ * @property ?\Illuminate\Support\Collection $short_description
  * @property ?array $attribute_data
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class Brand extends BaseModel implements Contracts\Brand, SpatieHasMedia
+class Brand extends Base implements SpatieHasMedia
 {
-    use HasAttributes;
+    use HasAttributeData;
     use HasFactory;
     use HasMacros;
     use HasMedia;
+    use HasPublicId;
     use HasTranslations;
     use HasUrls;
+    use InvalidatesCache;
     use LogsActivity;
     use Searchable;
 
@@ -46,7 +55,8 @@ class Brand extends BaseModel implements Contracts\Brand, SpatieHasMedia
      * {@inheritDoc}
      */
     protected $casts = [
-        'attribute_data' => AsAttributeData::class,
+        'description' => AsCollection::class,
+        'short_description' => AsCollection::class,
     ];
 
     /**
@@ -57,11 +67,16 @@ class Brand extends BaseModel implements Contracts\Brand, SpatieHasMedia
         return BrandFactory::new();
     }
 
+    public function newCacheInvalidationEvent(CacheInvalidationReason $reason): CacheInvalidationEvent
+    {
+        return new BrandInvalidated($this, $reason);
+    }
+
     protected static function booted(): void
     {
         static::deleting(function (self $brand) {
             DB::beginTransaction();
-            $brand->products()->withTrashed()->update(['brand_id' => null]);
+            $brand->products()->update(['brand_id' => null]);
             $brand->discounts()->detach();
             $brand->collections()->detach();
             DB::commit();
@@ -73,20 +88,20 @@ class Brand extends BaseModel implements Contracts\Brand, SpatieHasMedia
      */
     public function products(): HasMany
     {
-        return $this->hasMany(Product::modelClass());
+        return $this->hasMany(Product::class);
     }
 
     public function discounts()
     {
         $prefix = config('lunar.database.table_prefix');
 
-        return $this->belongsToMany(Discount::modelClass(), "{$prefix}brand_discount");
+        return $this->belongsToMany(Discount::class, "{$prefix}brand_discount");
     }
 
     public function collections(): BelongsToMany
     {
         $prefix = config('lunar.database.table_prefix');
 
-        return $this->belongsToMany(Collection::modelClass(), "{$prefix}brand_collection");
+        return $this->belongsToMany(Collection::class, "{$prefix}brand_collection");
     }
 }

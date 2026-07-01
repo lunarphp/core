@@ -1,19 +1,18 @@
 <?php
 
-namespace Lunar\Actions\Carts;
+namespace Lunar\Core\Actions\Carts;
 
-use Lunar\Facades\DB;
-use Lunar\Models\Cart;
-use Lunar\Models\Contracts\Cart as CartContract;
+use Lunar\Core\Contracts\Actions\Carts\MergesCart;
+use Lunar\Core\Events\Carts\CartMerged;
+use Lunar\Core\Facades\DB;
+use Lunar\Core\Models\Cart;
 
-class MergeCart
+class MergeCart implements MergesCart
 {
     /**
      * Execute the action.
-     *
-     * @return CartContract
      */
-    public function execute(CartContract $target, Cart $source)
+    public function execute(Cart $target, Cart $source): Cart
     {
         /** @var Cart $target */
         if ($target->id == $source->id) {
@@ -62,6 +61,8 @@ class MergeCart
                 'merged_id' => $target->id,
             ]);
         });
+
+        CartMerged::dispatch($target, $source);
 
         return $target;
     }

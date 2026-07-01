@@ -1,12 +1,10 @@
 <?php
 
-namespace Lunar\Actions\Collections;
+namespace Lunar\Core\Actions\Collections;
 
 use Illuminate\Support\Collection;
-use Lunar\Models\Contracts\Currency as CurrencyContract;
-use Lunar\Models\Contracts\Product as ProductContract;
-use Lunar\Models\Currency;
-use Lunar\Models\Product;
+use Lunar\Core\Models\Currency;
+use Lunar\Core\Models\Product;
 
 class SortProductsByPrice
 {
@@ -17,7 +15,7 @@ class SortProductsByPrice
     {
         /** @var Collection $products */
         // Load up our products and prices.
-        $products = $products->load('variants.basePrices');
+        $products = $products->load('variants.basePrices.currency');
 
         return $products->sort(function ($current, $next) use ($currency, $direction) {
             $currentPrice = $this->getMinPrice($current, $currency);
@@ -27,7 +25,7 @@ class SortProductsByPrice
         });
     }
 
-    protected function getMinPrice(ProductContract $product, CurrencyContract $currency)
+    protected function getMinPrice(Product $product, Currency $currency)
     {
         /** @var Product $product */
         /** @var Currency $currency */

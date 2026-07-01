@@ -1,32 +1,20 @@
 <?php
 
-namespace Lunar\Observers;
+namespace Lunar\Core\Observers;
 
-use Lunar\Models\Contracts\Product as ProductContract;
+use Lunar\Core\Models\Product;
 
 class ProductObserver
 {
-    /**
-     * Handle the ProductVariant "deleted" event.
-     */
-    public function deleting(ProductContract $product): void
+    public function deleting(Product $product): void
     {
-        if ($product->isForceDeleting()) {
-            $product->variants()->withTrashed()->get()->each->forceDelete();
-
-            $product->collections()->detach();
-
-            $product->customerGroups()->detach();
-
-            $product->urls()->delete();
-
-            $product->productOptions()->detach();
-
-            $product->channels()->detach();
-
-            $product->tags()->detach();
-        }
-
+        $product->variants()->get()->each->delete();
+        $product->collections()->detach();
+        $product->customerGroups()->detach();
+        $product->urls()->delete();
+        $product->productOptions()->detach();
+        $product->channels()->detach();
+        $product->tags()->detach();
         $product->associations()->delete();
         $product->inverseAssociations()->delete();
     }

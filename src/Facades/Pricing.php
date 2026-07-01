@@ -1,20 +1,27 @@
 <?php
 
-namespace Lunar\Facades;
+namespace Lunar\Core\Facades;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Facade;
-use Lunar\Base\PricingManagerInterface;
-use Lunar\Managers\PricingManager;
+use Lunar\Core\Contracts\PricingManager;
+use Lunar\Core\Contracts\Purchasable;
+use Lunar\Core\DataObjects\PricingResponse;
+use Lunar\Core\DataObjects\StorefrontContext;
+use Lunar\Core\Models\Currency;
+use Lunar\Core\Models\CustomerGroup;
 
 /**
- * @method static \Lunar\Managers\PricingManager for(\Lunar\Base\Purchasable $purchasable)
- * @method static \Lunar\Managers\PricingManager user(\Illuminate\Contracts\Auth\Authenticatable|null $user)
- * @method static \Lunar\Managers\PricingManager guest()
- * @method static \Lunar\Managers\PricingManager currency(\Lunar\Models\Contracts\Currency|null $currency)
- * @method static \Lunar\Managers\PricingManager qty(int $qty)
- * @method static \Lunar\Managers\PricingManager customerGroups(\Illuminate\Support\Collection|null $customerGroups)
- * @method static \Lunar\Managers\PricingManager customerGroup(\Lunar\Models\Contracts\CustomerGroup|null $customerGroup)
- * @method static \Lunar\Base\DataTransferObjects\PricingResponse get()
+ * @method static \Lunar\Core\Managers\PricingManager for(Purchasable $purchasable)
+ * @method static \Lunar\Core\Managers\PricingManager user(Authenticatable|null $user)
+ * @method static \Lunar\Core\Managers\PricingManager guest()
+ * @method static \Lunar\Core\Managers\PricingManager currency(Currency|null $currency)
+ * @method static \Lunar\Core\Managers\PricingManager qty(int $qty)
+ * @method static \Lunar\Core\Managers\PricingManager customerGroups(Collection|null $customerGroups)
+ * @method static \Lunar\Core\Managers\PricingManager customerGroup(CustomerGroup|null $customerGroup)
+ * @method static \Lunar\Core\Managers\PricingManager using(StorefrontContext $context)
+ * @method static PricingResponse get()
  *
  * @see PricingManager
  */
@@ -25,6 +32,6 @@ class Pricing extends Facade
      */
     protected static function getFacadeAccessor()
     {
-        return PricingManagerInterface::class;
+        return PricingManager::class;
     }
 }

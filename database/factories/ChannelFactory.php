@@ -1,9 +1,9 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
 use Illuminate\Support\Str;
-use Lunar\Models\Channel;
+use Lunar\Core\Models\Channel;
 
 class ChannelFactory extends BaseFactory
 {
@@ -12,6 +12,7 @@ class ChannelFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'name' => $this->faker->name(),
             'handle' => Str::slug($this->faker->name()),
             'default' => true,

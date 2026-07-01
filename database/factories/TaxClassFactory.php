@@ -1,8 +1,9 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\Models\TaxClass;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\TaxClass;
 
 class TaxClassFactory extends BaseFactory
 {
@@ -11,6 +12,7 @@ class TaxClassFactory extends BaseFactory
     public function definition(): array
     {
         return [
+            'public_id' => (string) Str::ulid(),
             'name' => $this->faker->name,
             'default' => false,
         ];

@@ -1,29 +1,32 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Casts\AsAttributeData;
-use Lunar\Base\HasThumbnailImage;
-use Lunar\Base\Purchasable;
-use Lunar\Base\Traits\HasAttributes;
-use Lunar\Base\Traits\HasDimensions;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\HasPrices;
-use Lunar\Base\Traits\HasTranslations;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\ProductVariantFactory;
+use Lunar\Core\Contracts\HasThumbnailImage;
+use Lunar\Core\Contracts\Purchasable;
+use Lunar\Core\Contracts\TracksStock;
+use Lunar\Core\Database\Factories\ProductVariantFactory;
+use Lunar\Core\Enums\SellingPolicy;
+use Lunar\Core\Models\Concerns\HasAttributeData;
+use Lunar\Core\Models\Concerns\HasDimensions;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPrices;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\HasStock;
+use Lunar\Core\Models\Concerns\HasTranslations;
+use Lunar\Core\Models\Concerns\InvalidatesRelatedCache;
+use Lunar\Core\Models\Concerns\LogsActivity;
 use Spatie\LaravelBlink\BlinkFacade as Blink;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property int $product_id
  * @property int $tax_class_id
  * @property ?Collection $attribute_data
@@ -46,23 +49,29 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property ?float $volume_value
  * @property ?string $volume_unit
  * @property bool $shippable
- * @property int $stock
  * @property int $backorder
- * @property string $purchasable
+ * @property SellingPolicy $selling_policy
+ * @property int $stock_on_hand
+ * @property int $stock_incoming
+ * @property int $stock_committed
+ * @property int $stock_reserved
+ * @property int $stock_unavailable
+ * @property int $stock_available
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
- * @property ?Carbon $deleted_at
  */
-class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasThumbnailImage, Purchasable
+class ProductVariant extends Base implements HasThumbnailImage, Purchasable, TracksStock
 {
-    use HasAttributes;
+    use HasAttributeData;
     use HasDimensions;
     use HasFactory;
     use HasMacros;
     use HasPrices;
+    use HasPublicId;
+    use HasStock;
     use HasTranslations;
+    use InvalidatesRelatedCache;
     use LogsActivity;
-    use SoftDeletes;
 
     /**
      * Define the guarded attributes.
@@ -76,7 +85,13 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
      */
     protected $casts = [
         'shippable' => 'bool',
-        'attribute_data' => AsAttributeData::class,
+        'selling_policy' => SellingPolicy::class,
+        'stock_on_hand' => 'integer',
+        'stock_incoming' => 'integer',
+        'stock_committed' => 'integer',
+        'stock_reserved' => 'integer',
+        'stock_unavailable' => 'integer',
+        'stock_available' => 'integer',
     ];
 
     /**
@@ -89,12 +104,19 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::modelClass())->withTrashed();
+        return $this->belongsTo(Product::class);
+    }
+
+    public function cacheInvalidationTargets(): iterable
+    {
+        $this->loadMissing('product');
+
+        return [$this->product];
     }
 
     public function taxClass(): BelongsTo
     {
-        return $this->belongsTo(TaxClass::modelClass());
+        return $this->belongsTo(TaxClass::class);
     }
 
     public function values(): BelongsToMany
@@ -102,7 +124,7 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            ProductOptionValue::modelClass(),
+            ProductOptionValue::class,
             "{$prefix}product_option_value_product_variant",
             'variant_id',
             'value_id'
@@ -111,6 +133,8 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
 
     public function getPrices(): Collection
     {
+        $this->loadMissing(['prices.currency', 'prices.priceable']);
+
         return $this->prices;
     }
 
@@ -128,6 +152,8 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
     public function getTaxClass(): TaxClass
     {
         return Blink::once("tax_class_{$this->tax_class_id}", function () {
+            $this->loadMissing('taxClass');
+
             return $this->taxClass;
         });
     }
@@ -156,9 +182,17 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
     /**
      * {@inheritDoc}
      */
+    public function requiresFulfilment(): bool
+    {
+        return $this->isShippable();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function getDescription(): string
     {
-        return $this->product->translateAttribute('name');
+        return $this->product->translate('name');
     }
 
     /**
@@ -174,6 +208,8 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
      */
     public function getOptions(): Collection
     {
+        $this->loadMissing('values');
+
         return $this->values->map(fn ($value) => $value->translate('name'));
     }
 
@@ -197,6 +233,8 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
 
     public function getThumbnail(): ?Media
     {
+        $this->loadMissing(['images', 'product']);
+
         return $this->images->first(function ($media) {
             return (bool) $media->pivot?->primary;
         }) ?: $this->product->thumbnail;
@@ -204,28 +242,23 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
 
     public function canBeFulfilledAtQuantity(int $quantity): bool
     {
-        if ($this->purchasable == 'always') {
-            return true;
-        }
-
-        return $quantity <= $this->getTotalInventory();
+        return $this->selling_policy === SellingPolicy::Always
+            || $quantity <= $this->getTotalInventory();
     }
 
     public function isPurchasable(): bool
     {
-        return ! $this->trashed()
-            && $this->product
-            && ! $this->product->trashed()
-            && $this->product->status === 'published';
+        return $this->product
+            && (string) $this->product->status === 'published';
     }
 
     public function getTotalInventory(): int
     {
-        if ($this->purchasable == 'in_stock') {
-            return $this->stock;
-        }
-
-        return $this->stock + $this->backorder;
+        return match ($this->selling_policy) {
+            SellingPolicy::Always => $this->stock_available,
+            SellingPolicy::InStock => $this->stock_available,
+            SellingPolicy::InStockOrOnBackorder => $this->stock_available + $this->backorder,
+        };
     }
 
     public function getThumbnailImage(): string

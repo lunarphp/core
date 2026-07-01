@@ -1,9 +1,9 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
 use Illuminate\Support\Str;
-use Lunar\Models\ProductOption;
+use Lunar\Core\Models\ProductOption;
 
 class ProductOptionFactory extends BaseFactory
 {
@@ -16,6 +16,7 @@ class ProductOptionFactory extends BaseFactory
         $name = $this->faker->name;
 
         return [
+            'public_id' => (string) Str::ulid(),
             'handle' => Str::slug($name),
             'name' => [
                 'en' => $name,

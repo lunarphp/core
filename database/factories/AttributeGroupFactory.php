@@ -1,9 +1,9 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
 use Illuminate\Support\Str;
-use Lunar\Models\AttributeGroup;
+use Lunar\Core\Models\AttributeGroup;
 
 class AttributeGroupFactory extends BaseFactory
 {
@@ -14,12 +14,11 @@ class AttributeGroupFactory extends BaseFactory
     public function definition(): array
     {
         return [
-            'attributable_type' => 'product_type',
-            'name' => collect([
-                'en' => $this->faker->name(),
-            ]),
-            'handle' => Str::slug($this->faker->name()),
+            'public_id' => (string) Str::ulid(),
+            'name' => $this->faker->words(2, true),
+            'handle' => $this->faker->unique()->slug(),
             'position' => self::$position++,
+            'system' => false,
         ];
     }
 }

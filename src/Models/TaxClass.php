@@ -1,28 +1,30 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasDefaultRecord;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\TaxClassFactory;
+use Lunar\Core\Database\Factories\TaxClassFactory;
+use Lunar\Core\Models\Concerns\HasDefaultRecord;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\LogsActivity;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property bool $default
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class TaxClass extends BaseModel implements Contracts\TaxClass
+class TaxClass extends Base
 {
     use HasDefaultRecord;
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
     use LogsActivity;
 
     public static function booted()
@@ -62,11 +64,11 @@ class TaxClass extends BaseModel implements Contracts\TaxClass
 
     public function taxRateAmounts(): HasMany
     {
-        return $this->hasMany(TaxRateAmount::modelClass());
+        return $this->hasMany(TaxRateAmount::class);
     }
 
     public function productVariants(): HasMany
     {
-        return $this->hasMany(ProductVariant::modelClass());
+        return $this->hasMany(ProductVariant::class);
     }
 }

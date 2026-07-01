@@ -1,39 +1,42 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasDefaultRecord;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\ChannelFactory;
+use Lunar\Core\Database\Factories\ChannelFactory;
+use Lunar\Core\Models\Concerns\HasDefaultRecord;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\LogsActivity;
+use Lunar\Core\States\Channel\ChannelState;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property string $handle
  * @property bool $default
  * @property ?string $url
+ * @property ChannelState $status
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
- * @property ?Carbon $deleted_at
  */
-class Channel extends BaseModel implements Contracts\Channel
+class Channel extends Base
 {
     use HasDefaultRecord;
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
+    use HasStates;
     use LogsActivity;
-    use SoftDeletes;
 
     public $casts = [
-        'enabled' => 'boolean',
+        'status' => ChannelState::class,
     ];
 
     /**
@@ -73,7 +76,7 @@ class Channel extends BaseModel implements Contracts\Channel
         $prefix = config('lunar.database.table_prefix');
 
         return $this->morphedByMany(
-            Discount::modelClass(),
+            Discount::class,
             'channelable',
             "{$prefix}channelables"
         );
@@ -87,7 +90,7 @@ class Channel extends BaseModel implements Contracts\Channel
         $prefix = config('lunar.database.table_prefix');
 
         return $this->morphedByMany(
-            Product::modelClass(),
+            Product::class,
             'channelable',
             "{$prefix}channelables"
         );
@@ -101,9 +104,19 @@ class Channel extends BaseModel implements Contracts\Channel
         $prefix = config('lunar.database.table_prefix');
 
         return $this->morphedByMany(
-            Collection::modelClass(),
+            Collection::class,
             'channelable',
             "{$prefix}channelables"
         );
+    }
+
+    /**
+     * Whether any order has been placed against this channel. Used to gate
+     * hard deletion in the admin — channels with order history should be
+     * marked Inactive, not deleted, so historical orders keep their context.
+     */
+    public function hasOrderHistory(): bool
+    {
+        return Order::query()->where('channel_id', $this->id)->exists();
     }
 }

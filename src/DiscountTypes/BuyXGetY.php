@@ -1,18 +1,17 @@
 <?php
 
-namespace Lunar\DiscountTypes;
+namespace Lunar\Core\DiscountTypes;
 
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Collection;
-use Lunar\Base\ValueObjects\Cart\DiscountBreakdown;
-use Lunar\Base\ValueObjects\Cart\DiscountBreakdownLine;
-use Lunar\DataTypes\Price;
-use Lunar\Models\Cart;
-use Lunar\Models\CartLine;
-use Lunar\Models\Collection as LunarCollection;
-use Lunar\Models\Contracts\Cart as CartContract;
-use Lunar\Models\Product;
-use Lunar\Models\ProductVariant;
+use Lunar\Core\DataObjects\PriceValue;
+use Lunar\Core\Models\Cart;
+use Lunar\Core\Models\CartLine;
+use Lunar\Core\Models\Collection as LunarCollection;
+use Lunar\Core\Models\Product;
+use Lunar\Core\Models\ProductVariant;
+use Lunar\Core\ValueObjects\Cart\DiscountBreakdown;
+use Lunar\Core\ValueObjects\Cart\DiscountBreakdownLine;
 
 class BuyXGetY extends AbstractDiscountType
 {
@@ -49,7 +48,7 @@ class BuyXGetY extends AbstractDiscountType
      *
      * @return CartLine
      */
-    public function apply(CartContract $cart): CartContract
+    public function apply(Cart $cart): Cart
     {
         $data = $this->discount->data;
 
@@ -193,24 +192,13 @@ class BuyXGetY extends AbstractDiscountType
 
             $remainingRewardQty -= $qtyToAllocate;
 
-            $subTotal = $rewardLine->subTotal->value;
+            $lineDiscount = $rewardLine->unitPrice->multiply($qtyToAllocate);
 
-            $unitPrice = $rewardLine->unitPrice->value;
+            $discountTotal += $lineDiscount->value;
 
-            $lineDiscountTotal = $unitPrice * $qtyToAllocate;
-            $discountTotal += $lineDiscountTotal;
+            $rewardLine->discountTotal = $lineDiscount;
 
-            $rewardLine->discountTotal = new Price(
-                $lineDiscountTotal,
-                $cart->currency,
-                1
-            );
-
-            $rewardLine->subTotalDiscounted = new Price(
-                $subTotal - $lineDiscountTotal,
-                $cart->currency,
-                1
-            );
+            $rewardLine->subTotalDiscounted = $rewardLine->subTotal->subtract($lineDiscount);
 
             if (! $cart->freeItems) {
                 $cart->freeItems = collect();
@@ -224,7 +212,7 @@ class BuyXGetY extends AbstractDiscountType
         }
 
         $this->addDiscountBreakdown($cart, new DiscountBreakdown(
-            price: new Price($discountTotal, $cart->currency, 1),
+            price: new PriceValue($discountTotal, $cart->currency),
             lines: $affectedLines,
             discount: $this->discount,
         ));
@@ -234,7 +222,7 @@ class BuyXGetY extends AbstractDiscountType
         return $cart;
     }
 
-    private function processAutomaticRewards(CartContract $cart, int $remainingRewardQty, Collection $affectedLines, int $discountTotal)
+    private function processAutomaticRewards(Cart $cart, int $remainingRewardQty, Collection $affectedLines, int $discountTotal)
     {
         // we have lines to add
         if ($remainingRewardQty > 0) {
@@ -293,9 +281,9 @@ class BuyXGetY extends AbstractDiscountType
 
                     $unitQuantity = $purchasable->getUnitQuantity();
 
-                    $rewardLine->subTotal = new Price($rewardLine->unitPrice->value, $cart->currency, $unitQuantity);
-                    $rewardLine->taxAmount = new Price(0, $cart->currency, $unitQuantity);
-                    $rewardLine->total = new Price($rewardLine->unitPrice->value, $cart->currency, $unitQuantity);
+                    $rewardLine->subTotal = new PriceValue($rewardLine->unitPrice->value, $cart->currency);
+                    $rewardLine->taxAmount = new PriceValue(0, $cart->currency);
+                    $rewardLine->total = new PriceValue($rewardLine->unitPrice->value, $cart->currency);
                 }
 
                 $meta = $rewardLine->meta ?? json_decode('{}');
@@ -330,17 +318,11 @@ class BuyXGetY extends AbstractDiscountType
                     $discountTotal = $rewardLine->subTotal->value;
                 }
 
-                $rewardLine->discountTotal = new Price(
-                    $discountTotal,
-                    $cart->currency,
-                    1
-                );
+                $rewardLine->discountTotal = new PriceValue($discountTotal, $cart->currency);
 
-                $rewardLine->subTotalDiscounted = new Price(
-                    max(0, $rewardLine->subTotal->value - $rewardLine->discountTotal->value),
-                    $cart->currency,
-                    1
-                );
+                $rewardLine->subTotalDiscounted = $rewardLine->subTotal
+                    ->subtract($rewardLine->discountTotal)
+                    ->clampToZero();
 
                 $rewardLine->meta = $meta;
                 $rewardLine->save();

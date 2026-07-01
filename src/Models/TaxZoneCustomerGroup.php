@@ -1,13 +1,12 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Database\Factories\TaxZoneCustomerGroupFactory;
+use Lunar\Core\Database\Factories\TaxZoneCustomerGroupFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
 
 /**
  * @property int $id
@@ -16,7 +15,7 @@ use Lunar\Database\Factories\TaxZoneCustomerGroupFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class TaxZoneCustomerGroup extends BaseModel implements Contracts\TaxZoneCustomerGroup
+class TaxZoneCustomerGroup extends Base
 {
     use HasFactory;
     use HasMacros;
@@ -42,7 +41,7 @@ class TaxZoneCustomerGroup extends BaseModel implements Contracts\TaxZoneCustome
      */
     public function customerGroup(): BelongsTo
     {
-        return $this->belongsTo(CustomerGroup::modelClass());
+        return $this->belongsTo(CustomerGroup::class);
     }
 
     /**
@@ -50,6 +49,6 @@ class TaxZoneCustomerGroup extends BaseModel implements Contracts\TaxZoneCustome
      */
     public function taxZone(): BelongsTo
     {
-        return $this->belongsTo(TaxZone::modelClass());
+        return $this->belongsTo(TaxZone::class);
     }
 }

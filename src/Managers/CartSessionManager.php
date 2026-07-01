@@ -1,29 +1,30 @@
 <?php
 
-namespace Lunar\Managers;
+namespace Lunar\Core\Managers;
 
 use Illuminate\Auth\AuthManager;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Session\SessionManager;
 use Illuminate\Support\Collection;
-use Lunar\Base\CartSessionInterface;
-use Lunar\Facades\ShippingManifest;
-use Lunar\Models\Cart;
-use Lunar\Models\Channel;
-use Lunar\Models\Contracts\Cart as CartContract;
-use Lunar\Models\Contracts\Channel as ChannelContract;
-use Lunar\Models\Contracts\Currency as CurrencyContract;
-use Lunar\Models\Currency;
-use Lunar\Models\Order;
+use Lunar\Core\Contracts\Actions\Storefront\ResolvesStorefrontContext;
+use Lunar\Core\Contracts\CartSession;
+use Lunar\Core\Facades\ShippingManifest;
+use Lunar\Core\Models\Cart;
+use Lunar\Core\Models\Channel;
+use Lunar\Core\Models\Currency;
+use Lunar\Core\Models\Order;
 
-class CartSessionManager implements CartSessionInterface
+class CartSessionManager implements CartSession
 {
+    protected ?Channel $channel = null;
+
+    protected ?Currency $currency = null;
+
     public function __construct(
         protected SessionManager $sessionManager,
         protected AuthManager $authManager,
-        protected ChannelContract $channel,
-        protected CurrencyContract $currency,
-        public ?CartContract $cart = null,
+        protected ResolvesStorefrontContext $resolveStorefrontContext,
+        public ?Cart $cart = null,
     ) {
         //
     }
@@ -104,7 +105,7 @@ class CartSessionManager implements CartSessionInterface
     /**
      * {@inheritDoc}
      */
-    public function associate(CartContract $cart, Authenticatable $user, $policy): void
+    public function associate(Cart $cart, Authenticatable $user, $policy): void
     {
         /** @var Cart $cart */
         $this->use(
@@ -115,7 +116,7 @@ class CartSessionManager implements CartSessionInterface
     /**
      * Set the cart to be used for the session.
      */
-    public function use(CartContract $cart): CartContract
+    public function use(Cart $cart): Cart
     {
         /** @var Cart $cart */
         $this->sessionManager->put(
@@ -195,7 +196,7 @@ class CartSessionManager implements CartSessionInterface
     /**
      * Set the current channel.
      */
-    public function setChannel(ChannelContract $channel): void
+    public function setChannel(Channel $channel): void
     {
         /** @var Channel $channel */
         $this->channel = $channel;
@@ -210,7 +211,7 @@ class CartSessionManager implements CartSessionInterface
     /**
      * Set the current currency.
      */
-    public function setCurrency(CurrencyContract $currency): void
+    public function setCurrency(Currency $currency): void
     {
         /** @var Currency $currency */
         $this->currency = $currency;
@@ -225,17 +226,17 @@ class CartSessionManager implements CartSessionInterface
     /**
      * Return the current currency.
      */
-    public function getCurrency(): CurrencyContract
+    public function getCurrency(): Currency
     {
-        return $this->currency?->exists ? $this->currency : Currency::modelClass()::getDefault();
+        return $this->currency?->exists ? $this->currency : Currency::getDefault();
     }
 
     /**
      * Return the current channel.
      */
-    public function getChannel(): ChannelContract
+    public function getChannel(): Channel
     {
-        return $this->channel?->exists ? $this->channel : Channel::modelClass()::getDefault();
+        return $this->channel?->exists ? $this->channel : Channel::getDefault();
     }
 
     /**
@@ -267,15 +268,25 @@ class CartSessionManager implements CartSessionInterface
     /**
      * Create a new cart instance.
      */
-    protected function createNewCart(): CartContract
+    protected function createNewCart(): Cart
     {
         $user = $this->authManager->user();
+        $customer = optional($user)->latestCustomer();
+
+        // An explicit setChannel()/setCurrency() override wins; otherwise the
+        // resolver supplies channel/currency/region from the default region.
+        $context = $this->resolveStorefrontContext->execute(
+            channel: $this->channel?->exists ? $this->channel : null,
+            currency: $this->currency?->exists ? $this->currency : null,
+            customer: $customer,
+        );
 
         $cart = Cart::create([
-            'currency_id' => $this->getCurrency()->id,
-            'channel_id' => $this->getChannel()->id,
+            'currency_id' => $context->currency->id,
+            'channel_id' => $context->channel->id,
+            'region_id' => $context->region?->id,
             'user_id' => optional($user)->id,
-            'customer_id' => optional($user)->latestCustomer()?->id,
+            'customer_id' => optional($customer)->id,
         ]);
 
         return $this->use($cart);

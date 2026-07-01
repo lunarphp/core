@@ -1,23 +1,21 @@
 <?php
 
-namespace Lunar\Pipelines\Cart;
+namespace Lunar\Core\Pipelines\Cart;
 
 use Closure;
-use Lunar\Base\ValueObjects\Cart\ShippingBreakdown;
-use Lunar\Base\ValueObjects\Cart\ShippingBreakdownItem;
-use Lunar\DataTypes\Price;
-use Lunar\Facades\ShippingManifest;
-use Lunar\Models\Cart;
-use Lunar\Models\Contracts\Cart as CartContract;
+use Lunar\Core\Facades\ShippingManifest;
+use Lunar\Core\Models\Cart;
+use Lunar\Core\ValueObjects\Cart\ShippingBreakdown;
+use Lunar\Core\ValueObjects\Cart\ShippingBreakdownItem;
 
-final class ApplyShipping
+class ApplyShipping
 {
     /**
      * Called just before cart totals are calculated.
      *
-     * @param  Closure(CartContract): mixed  $next
+     * @param  Closure(Cart):mixed  $next
      */
-    public function handle(CartContract $cart, Closure $next): mixed
+    public function handle(Cart $cart, Closure $next): mixed
     {
         /** @var Cart $cart */
         $shippingBreakdown = new ShippingBreakdown;
@@ -35,8 +33,8 @@ final class ApplyShipping
             );
 
             if ($cart->shippingAddress && ! $cart->shippingBreakdown) {
-                $cart->shippingAddress->shippingTotal = new Price($shippingOption->price->value, $cart->currency, 1);
-                $cart->shippingAddress->shippingSubTotal = new Price($shippingOption->price->value, $cart->currency, 1);
+                $cart->shippingAddress->shippingTotal = $shippingOption->price;
+                $cart->shippingAddress->shippingSubTotal = $shippingOption->price;
             }
         }
 

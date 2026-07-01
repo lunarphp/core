@@ -1,12 +1,11 @@
 <?php
 
-namespace Lunar\Pipelines\CartLine;
+namespace Lunar\Core\Pipelines\CartLine;
 
 use Closure;
-use Lunar\DataTypes\Price;
-use Lunar\Facades\Pricing;
-use Lunar\Models\CartLine;
-use Lunar\Models\Contracts\CartLine as CartLineContract;
+use Lunar\Core\DataObjects\PriceValue;
+use Lunar\Core\Facades\Pricing;
+use Lunar\Core\Models\CartLine;
 use Spatie\LaravelBlink\BlinkFacade as Blink;
 
 class GetUnitPrice
@@ -14,10 +13,10 @@ class GetUnitPrice
     /**
      * Called just before cart totals are calculated.
      *
-     * @param  Closure(CartLineContract): mixed  $next
+     * @param  Closure(CartLine):mixed  $next
      * @return Closure
      */
-    public function handle(CartLineContract $cartLine, Closure $next)
+    public function handle(CartLine $cartLine, Closure $next)
     {
         /** @var CartLine $cart */
         $purchasable = $cartLine->purchasable;
@@ -26,6 +25,7 @@ class GetUnitPrice
         if ($customer = $cart->customer) {
             $customerGroups = $customer->customerGroups;
         } else {
+            $cart->user?->loadMissing('customers.customerGroups');
             $customerGroups = $cart->user?->customers->pluck('customerGroups')->flatten();
         }
 
@@ -40,16 +40,14 @@ class GetUnitPrice
             ->for($purchasable)
             ->get();
 
-        $cartLine->unitPrice = new Price(
-            $priceResponse->matched->price->value,
+        $cartLine->unitPrice = new PriceValue(
+            (int) $priceResponse->matched->price,
             $cart->currency,
-            $purchasable->getUnitQuantity()
         );
 
-        $cartLine->unitPriceInclTax = new Price(
+        $cartLine->unitPriceInclTax = new PriceValue(
             $priceResponse->matched->priceIncTax($cart->taxZone)->value,
             $cart->currency,
-            $purchasable->getUnitQuantity()
         );
 
         return $next($cartLine);

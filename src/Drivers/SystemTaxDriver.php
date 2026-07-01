@@ -1,22 +1,27 @@
 <?php
 
-namespace Lunar\Drivers;
+namespace Lunar\Core\Drivers;
 
-use Lunar\Actions\Taxes\GetTaxZone;
-use Lunar\Base\Addressable;
-use Lunar\Base\Purchasable;
-use Lunar\Base\TaxDriver;
-use Lunar\Base\ValueObjects\Cart\TaxBreakdown;
-use Lunar\Base\ValueObjects\Cart\TaxBreakdownAmount;
-use Lunar\DataTypes\Price;
-use Lunar\Models\Contracts\CartLine;
-use Lunar\Models\Contracts\Currency;
-use Lunar\Models\Contracts\TaxZone as TaxZoneContract;
-use Lunar\Models\TaxZone;
-use Spatie\LaravelBlink\BlinkFacade as Blink;
+use Lunar\Core\Contracts\Actions\Taxes\GetsTaxZone;
+use Lunar\Core\Contracts\Addressable;
+use Lunar\Core\Contracts\Purchasable;
+use Lunar\Core\DataObjects\PriceValue;
+use Lunar\Core\Models\CartLine;
+use Lunar\Core\Models\Currency;
+use Lunar\Core\Models\TaxZone;
+use Lunar\Core\Pricing\PriceCalculatorInterface;
+use Lunar\Core\ValueObjects\Cart\TaxBreakdown;
+use Lunar\Core\ValueObjects\Cart\TaxBreakdownAmount;
+use Spatie\Blink\Blink;
 
 class SystemTaxDriver implements TaxDriver
 {
+    public function __construct(
+        protected GetsTaxZone $getsTaxZone,
+        protected PriceCalculatorInterface $priceCalculator,
+        protected Blink $blink,
+    ) {}
+
     /**
      * The taxable shipping address.
      */
@@ -46,7 +51,7 @@ class SystemTaxDriver implements TaxDriver
      * An optional tax zone override supplied at the cart level.
      * When set this takes precedence over the address-derived zone.
      */
-    protected ?TaxZoneContract $taxZone = null;
+    protected ?TaxZone $taxZone = null;
 
     /**
      * {@inheritDoc}
@@ -101,7 +106,7 @@ class SystemTaxDriver implements TaxDriver
     /**
      * {@inheritDoc}
      */
-    public function setTaxZone(?TaxZoneContract $taxZone = null): self
+    public function setTaxZone(?TaxZone $taxZone = null): self
     {
         $this->taxZone = $taxZone;
 
@@ -113,63 +118,53 @@ class SystemTaxDriver implements TaxDriver
      */
     public function getBreakdown($subTotal): TaxBreakdown
     {
-        $taxZone = $this->taxZone ?? app(GetTaxZone::class)->execute($this->shippingAddress);
+        $taxZone = $this->taxZone ?? $this->getsTaxZone->execute($this->shippingAddress);
         $taxClass = $this->purchasable->getTaxClass();
 
-        $taxAmounts = Blink::once('tax_zone_rates_'.$taxZone->id.'_'.$taxClass->id, function () use ($taxClass, $taxZone) {
-            return $taxZone->taxAmounts()->whereTaxClassId($taxClass->id)->get();
+        $taxAmounts = $this->blink->once('tax_zone_rates_'.$taxZone->id.'_'.$taxClass->id, function () use ($taxClass, $taxZone) {
+            return $taxZone->taxAmounts()->with('taxRate')->whereTaxClassId($taxClass->id)->get();
         });
 
         if (prices_inc_tax()) {
-            // Remove tax from price
-            $totalTaxPercentage = $taxAmounts->sum('percentage') / 100; // E.g. 0.2 for 20%
-            $priceExTax = round($subTotal / (1 + $totalTaxPercentage));
+            $totalTaxPercentage = (float) $taxAmounts->sum('percentage') / 100;
+            $priceExTax = $this->priceCalculator->withoutTax((int) $subTotal, $totalTaxPercentage, $this->currency);
 
-            // Check to see if the included tax uses the same tax zone
             if ($this->defaultTaxZone()->id === $taxZone->id) {
-                // Manually return the tax breakdown
+                $expectedTax = (int) $subTotal - $priceExTax;
+                $weights = $taxAmounts
+                    ->mapWithKeys(fn ($amount, $key) => [$key => (int) round((float) $amount->percentage * 10000)])
+                    ->all();
+
+                $allocations = $this->priceCalculator->distribute($expectedTax, $weights, $this->currency);
+
                 $breakdown = new TaxBreakdown;
 
-                $taxTally = 0;
-
                 foreach ($taxAmounts as $key => $amount) {
-                    if ($taxAmounts->keys()->last() == $key) {
-                        // Ensure the final tax amount adds up to the original price
-                        $result = $subTotal - $priceExTax - $taxTally;
-                    } else {
-                        $result = round($priceExTax * ($amount->percentage / 100));
-                    }
-
-                    $taxTally += $result;
-
-                    $amount = new TaxBreakdownAmount(
-                        price: new Price((int) $result, $this->currency, $this->purchasable->getUnitQuantity()),
+                    $breakdown->addAmount(new TaxBreakdownAmount(
+                        price: new PriceValue($allocations[$key], $this->currency),
                         identifier: "tax_rate_{$amount->taxRate->id}",
                         description: $amount->taxRate->name,
-                        percentage: $amount->percentage
-                    );
-                    $breakdown->addAmount($amount);
+                        percentage: $amount->percentage,
+                    ));
                 }
 
                 return $breakdown;
             }
 
-            // Set subTotal to ex. tax price
             $subTotal = $priceExTax;
         }
 
         $breakdown = new TaxBreakdown;
 
         foreach ($taxAmounts as $amount) {
-            $result = round($subTotal * ($amount->percentage / 100));
+            $result = $this->priceCalculator->percentage((int) $subTotal, (float) $amount->percentage / 100, $this->currency);
 
-            $amount = new TaxBreakdownAmount(
-                price: new Price((int) $result, $this->currency, $this->purchasable->getUnitQuantity()),
+            $breakdown->addAmount(new TaxBreakdownAmount(
+                price: new PriceValue($result, $this->currency),
                 identifier: "tax_rate_{$amount->taxRate->id}",
                 description: $amount->taxRate->name,
-                percentage: $amount->percentage
-            );
-            $breakdown->addAmount($amount);
+                percentage: $amount->percentage,
+            ));
         }
 
         return $breakdown;

@@ -1,8 +1,9 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
-use Lunar\Models\Brand;
+use Illuminate\Support\Str;
+use Lunar\Core\Models\Brand;
 
 class BrandFactory extends BaseFactory
 {
@@ -11,7 +12,10 @@ class BrandFactory extends BaseFactory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->name(),
+            'public_id' => (string) Str::ulid(),
+            'name' => $this->faker->company(),
+            'description' => collect(['en' => $this->faker->paragraph]),
+            'short_description' => collect(['en' => $this->faker->sentence]),
         ];
     }
 }

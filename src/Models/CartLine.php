@@ -1,6 +1,6 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,16 +9,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\CachesProperties;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Base\ValueObjects\Cart\TaxBreakdown;
-use Lunar\Database\Factories\CartLineFactory;
-use Lunar\DataTypes\Price;
+use Lunar\Core\Database\Factories\CartLineFactory;
+use Lunar\Core\DataObjects\PriceValue;
+use Lunar\Core\Models\Concerns\CachesProperties;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\LogsActivity;
+use Lunar\Core\ValueObjects\Cart\TaxBreakdown;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property int $cart_id
  * @property string $purchasable_type
  * @property int $purchasable_id
@@ -27,11 +28,12 @@ use Lunar\DataTypes\Price;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class CartLine extends BaseModel implements Contracts\CartLine
+class CartLine extends Base
 {
     use CachesProperties;
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
     use LogsActivity;
 
     /**
@@ -53,37 +55,37 @@ class CartLine extends BaseModel implements Contracts\CartLine
     /**
      * The cart line unit price.
      */
-    public ?Price $unitPrice = null;
+    public ?PriceValue $unitPrice = null;
 
     /**
      * The cart line unit price.
      */
-    public ?Price $unitPriceInclTax = null;
+    public ?PriceValue $unitPriceInclTax = null;
 
     /**
      * The cart line sub total.
      */
-    public ?Price $subTotal = null;
+    public ?PriceValue $subTotal = null;
 
     /**
      * The discounted sub total
      */
-    public ?Price $subTotalDiscounted = null;
+    public ?PriceValue $subTotalDiscounted = null;
 
     /**
      * The discount total.
      */
-    public ?Price $discountTotal = null;
+    public ?PriceValue $discountTotal = null;
 
     /**
      * The cart line tax amount.
      */
-    public ?Price $taxAmount = null;
+    public ?PriceValue $taxAmount = null;
 
     /**
      * The cart line total.
      */
-    public ?Price $total = null;
+    public ?PriceValue $total = null;
 
     /**
      * The promotion description.
@@ -123,13 +125,13 @@ class CartLine extends BaseModel implements Contracts\CartLine
 
     public function cart(): BelongsTo
     {
-        return $this->belongsTo(Cart::modelClass());
+        return $this->belongsTo(Cart::class);
     }
 
     public function taxClass(): HasOneThrough
     {
         return $this->hasOneThrough(
-            TaxClass::modelClass(),
+            TaxClass::class,
             $this->purchasable_type,
             'tax_class_id',
             'id'
@@ -141,13 +143,13 @@ class CartLine extends BaseModel implements Contracts\CartLine
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            Discount::modelClass(),
+            Discount::class,
             "{$prefix}cart_line_discount"
         );
     }
 
     public function purchasable(): MorphTo
     {
-        return $this->morphTo()->withTrashed();
+        return $this->morphTo();
     }
 }

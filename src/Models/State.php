@@ -1,13 +1,12 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Database\Factories\StateFactory;
+use Lunar\Core\Database\Factories\StateFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
 
 /**
  * @property int $id
@@ -17,7 +16,7 @@ use Lunar\Database\Factories\StateFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class State extends BaseModel implements Contracts\State
+class State extends Base
 {
     use HasFactory;
     use HasMacros;
@@ -40,6 +39,6 @@ class State extends BaseModel implements Contracts\State
 
     public function country(): BelongsTo
     {
-        return $this->belongsTo(Country::modelClass());
+        return $this->belongsTo(Country::class);
     }
 }

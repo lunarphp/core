@@ -1,16 +1,15 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasDefaultRecord;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\CurrencyFactory;
+use Lunar\Core\Database\Factories\CurrencyFactory;
+use Lunar\Core\Models\Concerns\HasDefaultRecord;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\LogsActivity;
 
 /**
  * @property int $id
@@ -24,7 +23,7 @@ use Lunar\Database\Factories\CurrencyFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class Currency extends BaseModel implements Contracts\Currency
+class Currency extends Base
 {
     use HasDefaultRecord;
     use HasFactory;
@@ -67,7 +66,7 @@ class Currency extends BaseModel implements Contracts\Currency
      */
     public function prices(): HasMany
     {
-        return $this->hasMany(Price::modelClass());
+        return $this->hasMany(Price::class);
     }
 
     public function getFactorAttribute(): string

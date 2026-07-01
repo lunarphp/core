@@ -1,26 +1,28 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\CollectionGroupFactory;
+use Lunar\Core\Database\Factories\CollectionGroupFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\LogsActivity;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property string $handle
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class CollectionGroup extends BaseModel implements Contracts\CollectionGroup
+class CollectionGroup extends Base
 {
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
     use LogsActivity;
 
     protected $guarded = [];
@@ -35,6 +37,6 @@ class CollectionGroup extends BaseModel implements Contracts\CollectionGroup
 
     public function collections(): HasMany
     {
-        return $this->hasMany(Collection::modelClass());
+        return $this->hasMany(Collection::class);
     }
 }

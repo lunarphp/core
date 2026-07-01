@@ -1,14 +1,13 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasDefaultRecord;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Database\Factories\LanguageFactory;
+use Lunar\Core\Database\Factories\LanguageFactory;
+use Lunar\Core\Models\Concerns\HasDefaultRecord;
+use Lunar\Core\Models\Concerns\HasMacros;
 
 /**
  * @property int $id
@@ -18,7 +17,7 @@ use Lunar\Database\Factories\LanguageFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class Language extends BaseModel implements Contracts\Language
+class Language extends Base
 {
     use HasDefaultRecord;
     use HasFactory;
@@ -42,6 +41,6 @@ class Language extends BaseModel implements Contracts\Language
 
     public function urls(): HasMany
     {
-        return $this->hasMany(Url::modelClass());
+        return $this->hasMany(Url::class);
     }
 }

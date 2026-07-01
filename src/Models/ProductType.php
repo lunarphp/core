@@ -1,28 +1,28 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Traits\HasAttributes;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\ProductTypeFactory;
+use Lunar\Core\Database\Factories\ProductTypeFactory;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\LogsActivity;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class ProductType extends BaseModel implements Contracts\ProductType
+class ProductType extends Base
 {
-    use HasAttributes;
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
     use LogsActivity;
 
     /**
@@ -41,33 +41,34 @@ class ProductType extends BaseModel implements Contracts\ProductType
      */
     protected $guarded = [];
 
-    public function mappedAttributes(): MorphToMany
+    public function mappedAttributes(): BelongsToMany
     {
         $prefix = config('lunar.database.table_prefix');
 
-        return $this->morphToMany(
-            Attribute::modelClass(),
-            'attributable',
-            "{$prefix}attributables"
+        return $this->belongsToMany(
+            Attribute::class,
+            "{$prefix}product_type_attribute",
         )->withTimestamps();
     }
 
-    public function productAttributes(): MorphToMany
+    public function productAttributes(): BelongsToMany
     {
-        return $this->mappedAttributes()->whereAttributeType(
-            Product::morphName()
+        return $this->mappedAttributes()->whereHas(
+            'models',
+            fn ($query) => $query->where('model_type', Product::morphName())
         );
     }
 
-    public function variantAttributes(): MorphToMany
+    public function variantAttributes(): BelongsToMany
     {
-        return $this->mappedAttributes()->whereAttributeType(
-            ProductVariant::morphName()
+        return $this->mappedAttributes()->whereHas(
+            'models',
+            fn ($query) => $query->where('model_type', ProductVariant::morphName())
         );
     }
 
     public function products(): HasMany
     {
-        return $this->hasMany(Product::modelClass());
+        return $this->hasMany(Product::class);
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Lunar\Jobs\Products\Associations;
+namespace Lunar\Core\Jobs\Products\Associations;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -8,10 +8,9 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
-use Lunar\Base\Enums\Concerns\ProvidesProductAssociationType;
-use Lunar\Facades\DB;
-use Lunar\Models\Contracts\Product as ProductContract;
-use Lunar\Models\Product;
+use Lunar\Core\Enums\Concerns\ProvidesProductAssociationType;
+use Lunar\Core\Facades\DB;
+use Lunar\Core\Models\Product;
 
 class Associate implements ShouldQueue
 {
@@ -32,7 +31,7 @@ class Associate implements ShouldQueue
     /**
      * The parent product instance.
      */
-    protected ProductContract $product;
+    protected Product $product;
 
     /**
      * The product association type.
@@ -42,7 +41,7 @@ class Associate implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(ProductContract $product, mixed $targets, ProvidesProductAssociationType|string $type)
+    public function __construct(Product $product, mixed $targets, ProvidesProductAssociationType|string $type)
     {
         if (is_array($targets)) {
             $targets = collect($targets);

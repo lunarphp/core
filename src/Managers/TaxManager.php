@@ -1,11 +1,12 @@
 <?php
 
-namespace Lunar\Managers;
+namespace Lunar\Core\Managers;
 
 use Illuminate\Support\Manager;
-use Lunar\Drivers\SystemTaxDriver;
+use Lunar\Core\Contracts\TaxManager as TaxManagerContract;
+use Lunar\Core\Drivers\SystemTaxDriver;
 
-class TaxManager extends Manager
+class TaxManager extends Manager implements TaxManagerContract
 {
     public function createSystemDriver()
     {

@@ -1,21 +1,21 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Casts\AsAttributeData;
-use Lunar\Base\Traits\HasAttributes;
-use Lunar\Base\Traits\HasDefaultRecord;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\CustomerGroupFactory;
+use Lunar\Core\Database\Factories\CustomerGroupFactory;
+use Lunar\Core\Models\Concerns\HasAttributeData;
+use Lunar\Core\Models\Concerns\HasDefaultRecord;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\LogsActivity;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property string $handle
  * @property bool $default
@@ -23,19 +23,19 @@ use Lunar\Database\Factories\CustomerGroupFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class CustomerGroup extends BaseModel implements Contracts\CustomerGroup
+class CustomerGroup extends Base
 {
-    use HasAttributes;
+    use HasAttributeData;
     use HasDefaultRecord;
     use HasFactory;
     use HasMacros;
+    use HasPublicId;
     use LogsActivity;
 
     /**
      * {@inheritDoc}
      */
     protected $casts = [
-        'attribute_data' => AsAttributeData::class,
     ];
 
     /**
@@ -56,7 +56,7 @@ class CustomerGroup extends BaseModel implements Contracts\CustomerGroup
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            Customer::modelClass(),
+            Customer::class,
             "{$prefix}customer_customer_group"
         )->withTimestamps();
     }
@@ -69,7 +69,7 @@ class CustomerGroup extends BaseModel implements Contracts\CustomerGroup
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            Discount::modelClass(),
+            Discount::class,
             "{$prefix}customer_group_discount"
         )->withTimestamps();
     }
@@ -82,7 +82,7 @@ class CustomerGroup extends BaseModel implements Contracts\CustomerGroup
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            Product::modelClass(),
+            Product::class,
             "{$prefix}customer_group_product"
         )->withTimestamps();
     }
@@ -92,7 +92,7 @@ class CustomerGroup extends BaseModel implements Contracts\CustomerGroup
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            Collection::modelClass(),
+            Collection::class,
             "{$prefix}collection_customer_group"
         )->withTimestamps();
     }

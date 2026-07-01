@@ -1,6 +1,6 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,18 +8,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Casts\AsAttributeData;
-use Lunar\Base\Traits\HasAttributes;
-use Lunar\Base\Traits\HasMacros;
-use Lunar\Base\Traits\HasPersonalDetails;
-use Lunar\Base\Traits\HasTranslations;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Base\Traits\Searchable;
-use Lunar\Database\Factories\CustomerFactory;
+use Lunar\Core\Database\Factories\CustomerFactory;
+use Lunar\Core\Models\Concerns\HasAttributeData;
+use Lunar\Core\Models\Concerns\HasMacros;
+use Lunar\Core\Models\Concerns\HasPersonalDetails;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\HasTranslations;
+use Lunar\Core\Models\Concerns\LogsActivity;
+use Lunar\Core\Models\Concerns\Searchable;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property ?string $title
  * @property string $first_name
  * @property string $last_name
@@ -31,12 +31,13 @@ use Lunar\Database\Factories\CustomerFactory;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class Customer extends BaseModel implements Contracts\Customer
+class Customer extends Base
 {
-    use HasAttributes;
+    use HasAttributeData;
     use HasFactory;
     use HasMacros;
     use HasPersonalDetails;
+    use HasPublicId;
     use HasTranslations;
     use LogsActivity;
     use Searchable;
@@ -52,7 +53,6 @@ class Customer extends BaseModel implements Contracts\Customer
      * {@inheritDoc}
      */
     protected $casts = [
-        'attribute_data' => AsAttributeData::class,
         'meta' => AsArrayObject::class,
     ];
 
@@ -69,7 +69,7 @@ class Customer extends BaseModel implements Contracts\Customer
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            CustomerGroup::modelClass(),
+            CustomerGroup::class,
             "{$prefix}customer_customer_group"
         )->withTimestamps();
     }
@@ -89,24 +89,24 @@ class Customer extends BaseModel implements Contracts\Customer
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            Discount::modelClass(),
+            Discount::class,
             "{$prefix}customer_discount"
         )->withTimestamps();
     }
 
     public function addresses(): HasMany
     {
-        return $this->hasMany(Address::modelClass());
+        return $this->hasMany(Address::class);
     }
 
     public function orders(): HasMany
     {
-        return $this->hasMany(Order::modelClass());
+        return $this->hasMany(Order::class);
     }
 
     public function carts(): HasMany
     {
-        return $this->hasMany(Cart::modelClass());
+        return $this->hasMany(Cart::class);
     }
 
     public function mappedAttributes(): MorphToMany
@@ -114,7 +114,7 @@ class Customer extends BaseModel implements Contracts\Customer
         $prefix = config('lunar.database.table_prefix');
 
         return $this->morphToMany(
-            Attribute::modelClass(),
+            Attribute::class,
             'attributable',
             "{$prefix}attributables"
         )->withTimestamps();

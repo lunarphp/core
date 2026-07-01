@@ -1,10 +1,9 @@
 <?php
 
-namespace Lunar\Facades;
+namespace Lunar\Core\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use Lunar\Base\TelemetryService;
-use Lunar\Base\TelemetryServiceInterface;
+use Lunar\Core\Contracts\TelemetryService;
 
 /**
  * @method static void optOut()
@@ -13,12 +12,12 @@ use Lunar\Base\TelemetryServiceInterface;
  * @method static bool shouldRun()
  * @method static void run()
  *
- * @see TelemetryService
+ * @see \Lunar\Core\Telemetry\TelemetryService
  */
 class Telemetry extends Facade
 {
     public static function getFacadeAccessor(): string
     {
-        return TelemetryServiceInterface::class;
+        return TelemetryService::class;
     }
 }

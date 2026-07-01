@@ -1,9 +1,9 @@
 <?php
 
-namespace Lunar\Database\Factories;
+namespace Lunar\Core\Database\Factories;
 
 use Illuminate\Support\Str;
-use Lunar\Models\CustomerGroup;
+use Lunar\Core\Models\CustomerGroup;
 
 class CustomerGroupFactory extends BaseFactory
 {
@@ -14,6 +14,7 @@ class CustomerGroupFactory extends BaseFactory
         $name = $this->faker->unique()->word;
 
         return [
+            'public_id' => (string) Str::ulid(),
             'name' => $name,
             'handle' => Str::slug($name),
         ];

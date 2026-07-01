@@ -1,13 +1,12 @@
 <?php
 
-namespace Lunar\Generators;
+namespace Lunar\Core\Generators;
 
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use Lunar\Models\Contracts\Language as LanguageContract;
-use Lunar\Models\Language;
-use Lunar\Models\Url;
+use Lunar\Core\Models\Language;
+use Lunar\Core\Models\Url;
 
 class UrlGenerator
 {
@@ -19,16 +18,18 @@ class UrlGenerator
     protected $model;
 
     /**
-     * The default language.
+     * The default language, resolved lazily on first use.
      */
-    protected LanguageContract $defaultLanguage;
+    protected ?Language $defaultLanguage = null;
 
     /**
-     * Construct the class.
+     * Return the default language, resolving it on first access. Deferred out
+     * of the constructor so the generator can be built before the languages
+     * table is queryable (e.g. when resolved early in a migration).
      */
-    public function __construct()
+    protected function defaultLanguage(): Language
     {
-        $this->defaultLanguage = Language::getDefault();
+        return $this->defaultLanguage ??= Language::getDefault();
     }
 
     /**
@@ -41,7 +42,7 @@ class UrlGenerator
         $this->model = $model;
 
         if (! $model->urls->count() &&
-            $name = $model->name ?: $model->attr('name')
+            $name = $model->translate('name')
         ) {
             $this->createUrl(
                 $name
@@ -61,7 +62,7 @@ class UrlGenerator
 
         $this->model->urls()->create([
             'default' => true,
-            'language_id' => $this->defaultLanguage->id,
+            'language_id' => $this->defaultLanguage()->id,
             'slug' => $uniqueSlug,
         ]);
     }
@@ -107,7 +108,7 @@ class UrlGenerator
         return Url::where(function ($query) use ($slug, $separator) {
             $query->where('slug', $slug)
                 ->orWhere('slug', 'like', $slug.$separator.'%');
-        })->whereLanguageId($this->defaultLanguage->id)
+        })->whereLanguageId($this->defaultLanguage()->id)
             ->select(['element_id', 'slug'])
             ->get()
             ->toBase()

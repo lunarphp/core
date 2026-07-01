@@ -1,6 +1,6 @@
 <?php
 
-namespace Lunar\Models;
+namespace Lunar\Core\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,17 +8,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
-use Lunar\Base\BaseModel;
-use Lunar\Base\Casts\CouponString;
-use Lunar\Base\Traits\HasChannels;
-use Lunar\Base\Traits\HasCustomerGroups;
-use Lunar\Base\Traits\HasTranslations;
-use Lunar\Base\Traits\LogsActivity;
-use Lunar\Database\Factories\DiscountFactory;
-use Lunar\DiscountTypes\AbstractDiscountType;
+use Lunar\Core\Casts\CouponString;
+use Lunar\Core\Database\Factories\DiscountFactory;
+use Lunar\Core\DiscountTypes\AbstractDiscountType;
+use Lunar\Core\Models\Concerns\HasChannels;
+use Lunar\Core\Models\Concerns\HasCustomerGroups;
+use Lunar\Core\Models\Concerns\HasPublicId;
+use Lunar\Core\Models\Concerns\HasTranslations;
+use Lunar\Core\Models\Concerns\LogsActivity;
 
 /**
  * @property int $id
+ * @property string $public_id
  * @property string $name
  * @property string $handle
  * @property ?string $coupon
@@ -32,11 +33,12 @@ use Lunar\DiscountTypes\AbstractDiscountType;
  * @property ?Carbon $created_at
  * @property ?Carbon $updated_at
  */
-class Discount extends BaseModel implements Contracts\Discount
+class Discount extends Base
 {
     use HasChannels,
         HasCustomerGroups,
         HasFactory,
+        HasPublicId,
         HasTranslations,
         LogsActivity;
 
@@ -99,27 +101,27 @@ class Discount extends BaseModel implements Contracts\Discount
 
     public function discountables(): HasMany
     {
-        return $this->hasMany(Discountable::modelClass());
+        return $this->hasMany(Discountable::class);
     }
 
     public function discountableConditions(): HasMany
     {
-        return $this->hasMany(Discountable::modelClass())->whereType('condition');
+        return $this->hasMany(Discountable::class)->whereType('condition');
     }
 
     public function discountableExclusions(): HasMany
     {
-        return $this->hasMany(Discountable::modelClass())->whereType('exclusion');
+        return $this->hasMany(Discountable::class)->whereType('exclusion');
     }
 
     public function discountableLimitations(): HasMany
     {
-        return $this->hasMany(Discountable::modelClass())->whereType('limitation');
+        return $this->hasMany(Discountable::class)->whereType('limitation');
     }
 
     public function discountableRewards(): HasMany
     {
-        return $this->hasMany(Discountable::modelClass())->whereType('reward');
+        return $this->hasMany(Discountable::class)->whereType('reward');
     }
 
     public function getType(): AbstractDiscountType
@@ -132,7 +134,7 @@ class Discount extends BaseModel implements Contracts\Discount
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            Collection::modelClass(),
+            Collection::class,
             "{$prefix}collection_discount"
         )->withPivot(['type'])->withTimestamps();
     }
@@ -142,7 +144,7 @@ class Discount extends BaseModel implements Contracts\Discount
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            Customer::modelClass(),
+            Customer::class,
             "{$prefix}customer_discount"
         )->withTimestamps();
     }
@@ -152,7 +154,7 @@ class Discount extends BaseModel implements Contracts\Discount
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            CustomerGroup::modelClass(),
+            CustomerGroup::class,
             "{$prefix}customer_group_discount"
         )->withPivot([
             'visible',
@@ -167,7 +169,7 @@ class Discount extends BaseModel implements Contracts\Discount
         $prefix = config('lunar.database.table_prefix');
 
         return $this->belongsToMany(
-            Brand::modelClass(),
+            Brand::class,
             "{$prefix}brand_discount"
         )->withPivot(['type'])->withTimestamps();
     }

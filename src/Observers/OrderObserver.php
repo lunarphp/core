@@ -1,29 +1,29 @@
 <?php
 
-namespace Lunar\Observers;
+namespace Lunar\Core\Observers;
 
-use Lunar\Models\Contracts\Order as OrderContract;
-use Lunar\Models\Order;
+use Lunar\Core\Events\Orders\OrderPlaced;
+use Lunar\Core\Models\Order;
 
 class OrderObserver
 {
     /**
-     * Handle the Order "updating" event.
-     *
-     * @return void
+     * Announce a newly-placed order. Reactions — its initial fulfilment, stock
+     * commitment — listen on {@see OrderPlaced}.
      */
-    public function updating(OrderContract $order)
+    public function created(Order $order): void
     {
         /** @var Order $order */
-        if ($order->getOriginal('status') != $order->status) {
-            activity()
-                ->causedBy(auth()->user())
-                ->performedOn($order)
-                ->event('status-update')
-                ->withProperties([
-                    'new' => $order->status,
-                    'previous' => $order->getOriginal('status'),
-                ])->log('status-update');
+        if ($order->isPlaced()) {
+            OrderPlaced::dispatch($order);
+        }
+    }
+
+    public function updated(Order $order): void
+    {
+        /** @var Order $order */
+        if ($order->wasChanged('placed_at') && $order->isPlaced()) {
+            OrderPlaced::dispatch($order);
         }
     }
 }

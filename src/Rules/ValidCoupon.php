@@ -1,10 +1,10 @@
 <?php
 
-namespace Lunar\Rules;
+namespace Lunar\Core\Rules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Lunar\Base\Validation\CouponValidator;
+use Lunar\Core\Contracts\CouponValidator;
 
 class ValidCoupon implements ValidationRule
 {
@@ -13,9 +13,7 @@ class ValidCoupon implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $isValid = app(
-            config('lunar.discounts.coupon_validator', CouponValidator::class)
-        )->validate($value);
+        $isValid = app(CouponValidator::class)->validate($value);
 
         if (! $isValid) {
             $fail('The :attribute is not valid or has been used too many times');

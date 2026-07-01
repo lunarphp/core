@@ -1,6 +1,6 @@
 <?php
 
-namespace Lunar\Search;
+namespace Lunar\Core\Search;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +15,7 @@ class OrderIndexer extends ScoutIndexer
             'channel_id',
             'created_at',
             'updated_at',
+            'closed_at',
             'total',
         ];
     }
@@ -24,11 +25,12 @@ class OrderIndexer extends ScoutIndexer
         return [
             'customer_id',
             'user_id',
-            'status',
+            'payment_status',
+            'fulfilment_status',
+            'closed',
             'placed_at',
             'channel_id',
             'tags',
-            '__soft_deleted',
         ];
     }
 
@@ -69,14 +71,18 @@ class OrderIndexer extends ScoutIndexer
     {
         $data = [
             'id' => (string) $model->id,
+            'public_id' => (string) $model->public_id,
             'channel' => $model->channel->name,
             'reference' => $model->reference,
             'customer_reference' => $model->customer_reference,
-            'status' => $model->status,
+            'payment_status' => (string) $model->payment_status,
+            'fulfilment_status' => (string) $model->fulfilment_status,
+            'closed' => $model->isClosed(),
             'placed_at' => optional($model->placed_at)->timestamp,
+            'closed_at' => optional($model->closed_at)->timestamp,
             'created_at' => (int) $model->created_at->timestamp,
-            'sub_total' => $model->sub_total->value,
-            'total' => $model->total->value,
+            'sub_total' => $model->sub_total,
+            'total' => $model->total,
             'currency_code' => $model->currency_code,
             'charges' => $model->transactions->map(function ($transaction) {
                 return [

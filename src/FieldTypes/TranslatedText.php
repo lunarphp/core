@@ -1,60 +1,20 @@
 <?php
 
-namespace Lunar\FieldTypes;
+namespace Lunar\Core\FieldTypes;
 
 use Illuminate\Support\Collection;
-use JsonSerializable;
-use Lunar\Base\FieldType;
-use Lunar\Exceptions\FieldTypeException;
+use Lunar\Core\Exceptions\FieldTypeException;
 
-class TranslatedText implements FieldType, JsonSerializable
+class TranslatedText extends AbstractFieldType
 {
-    /**
-     * @var Collection
-     */
-    protected $value;
-
-    /**
-     * Create a new instance of TranslatedText field type.
-     *
-     * @param  Collection  $value
-     */
-    public function __construct($value = null)
+    public function setValue(mixed $value): void
     {
-        if ($value) {
-            $this->setValue($value);
-        } else {
+        if (blank($value)) {
             $this->value = new Collection;
+
+            return;
         }
-    }
 
-    /**
-     * Serialize the class.
-     *
-     * @return Collection
-     */
-    public function jsonSerialize(): mixed
-    {
-        return $this->value;
-    }
-
-    /**
-     * Return the value of this field.
-     *
-     * @return Collection
-     */
-    public function getValue()
-    {
-        return $this->value;
-    }
-
-    /**
-     * Set the value of this field.
-     *
-     * @param  Collection  $value
-     */
-    public function setValue($value)
-    {
         if (is_array($value)) {
             $value = collect($value);
         }
