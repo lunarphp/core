@@ -2,10 +2,9 @@
 
 namespace Lunar\Rules;
 
-use Closure;
-use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Contracts\Validation\Rule;
 
-class MaxDecimalPlaces implements ValidationRule
+class MaxDecimalPlaces implements Rule
 {
     protected $maxDecimals = 2;
 
@@ -15,12 +14,24 @@ class MaxDecimalPlaces implements ValidationRule
     }
 
     /**
-     * Run the validation rule.
+     * Determine if the validation rule passes.
+     *
+     * @param  string  $attribute
+     * @param  mixed  $value
+     * @return bool
      */
-    public function validate(string $attribute, mixed $value, Closure $fail): void
+    public function passes($attribute, $value)
     {
-        if ((int) strpos(ltrim(strrev($value), '0'), '.') > $this->maxDecimals) {
-            $fail('The :attribute must be no more than '.$this->maxDecimals.' decimal place(s).');
-        }
+        return (int) strpos(ltrim(strrev($value), '0'), '.') <= $this->maxDecimals;
+    }
+
+    /**
+     * Get the validation error message.
+     *
+     * @return string
+     */
+    public function message()
+    {
+        return 'The :attribute must be no more than '.$this->maxDecimals.' decimal place(s).';
     }
 }

@@ -3,8 +3,6 @@
 namespace Lunar\Base\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 use Lunar\DataTypes\Price;
 use Lunar\Models\Currency;
 use Lunar\Models\OrderLine;
@@ -14,11 +12,11 @@ class DiscountBreakdown implements CastsAttributes
     /**
      * Cast the given value.
      *
-     * @param  Model  $model
+     * @param  \Illuminate\Database\Eloquent\Model  $model
      * @param  string  $key
      * @param  mixed  $value
      * @param  array  $attributes
-     * @return Collection
+     * @return \Illuminate\Support\Collection
      */
     public function get($model, $key, $value, $attributes)
     {
@@ -42,9 +40,9 @@ class DiscountBreakdown implements CastsAttributes
     /**
      * Prepare the given value for storage.
      *
-     * @param  Model  $model
+     * @param  \Illuminate\Database\Eloquent\Model  $model
      * @param  string  $key
-     * @param  Collection  $value
+     * @param  \Illuminate\Support\Collection  $value
      * @param  array  $attributes
      * @return array
      */

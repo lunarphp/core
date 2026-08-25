@@ -2,6 +2,7 @@
 
 namespace Lunar\Database\Factories;
 
+use Illuminate\Support\Str;
 use Lunar\Models\Tag;
 
 class TagFactory extends BaseFactory
@@ -11,7 +12,7 @@ class TagFactory extends BaseFactory
     public function definition(): array
     {
         return [
-            'value' => $this->faker->word,
+            'value' => Str::upper($this->faker->word),
         ];
     }
 }

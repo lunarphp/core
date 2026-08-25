@@ -2,8 +2,7 @@
 
 namespace Lunar\Base\Traits;
 
-use Lunar\Facades\Converter;
-use Lunar\Utils\MeasurementConverter;
+use Cartalyst\Converter\Laravel\Facades\Converter;
 
 trait HasDimensions
 {
@@ -28,7 +27,7 @@ trait HasDimensions
     /**
      * Getter for the length attribute.
      *
-     * @return MeasurementConverter
+     * @return \Cartalyst\Converter\Converter
      */
     public function getLengthAttribute()
     {
@@ -40,7 +39,7 @@ trait HasDimensions
     /**
      * Getter for the width attribute.
      *
-     * @return MeasurementConverter
+     * @return \Cartalyst\Converter\Converter
      */
     public function getWidthAttribute()
     {
@@ -52,7 +51,7 @@ trait HasDimensions
     /**
      * Getter for height attribute.
      *
-     * @return MeasurementConverter
+     * @return \Cartalyst\Converter\Converter
      */
     public function getHeightAttribute()
     {
@@ -64,7 +63,7 @@ trait HasDimensions
     /**
      * Getter for weight attribute.
      *
-     * @return MeasurementConverter
+     * @return \Cartalyst\Converter\Converter
      */
     public function getWeightAttribute()
     {
@@ -76,7 +75,7 @@ trait HasDimensions
     /**
      * Getter for the volume attribute.
      *
-     * @return MeasurementConverter
+     * @return \Cartalyst\Converter\Converter
      */
     public function getVolumeAttribute()
     {

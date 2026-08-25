@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Carbon;
 use Lunar\Base\BaseModel;
 use Lunar\Base\Casts\DiscountBreakdown;
 use Lunar\Base\Casts\Price;
@@ -39,10 +38,10 @@ use Lunar\Database\Factories\OrderFactory;
  * @property string $currency_code
  * @property ?string $compare_currency_code
  * @property float $exchange_rate
- * @property ?Carbon $placed_at
+ * @property ?\Illuminate\Support\Carbon $placed_at
  * @property ?array $meta
- * @property ?Carbon $created_at
- * @property ?Carbon $updated_at
+ * @property ?\Illuminate\Support\Carbon $created_at
+ * @property ?\Illuminate\Support\Carbon $updated_at
  */
 class Order extends BaseModel implements Contracts\Order
 {

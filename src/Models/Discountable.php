@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 use Lunar\Base\BaseModel;
 use Lunar\Database\Factories\DiscountableFactory;
 
@@ -16,8 +15,8 @@ use Lunar\Database\Factories\DiscountableFactory;
  * @property string $purchasable_type
  * @property int $purchasable_id
  * @property string $type
- * @property ?Carbon $created_at
- * @property ?Carbon $updated_at
+ * @property ?\Illuminate\Support\Carbon $created_at
+ * @property ?\Illuminate\Support\Carbon $updated_at
  */
 class Discountable extends BaseModel implements Contracts\Discountable
 {

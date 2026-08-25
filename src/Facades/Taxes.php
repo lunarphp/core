@@ -4,7 +4,6 @@ namespace Lunar\Facades;
 
 use Illuminate\Support\Facades\Facade;
 use Lunar\Base\TaxManagerInterface;
-use Lunar\Managers\TaxManager;
 
 /**
  * @method static void createSystemDriver()
@@ -17,7 +16,7 @@ use Lunar\Managers\TaxManager;
  * @method static \Lunar\Managers\TaxManager setContainer(\Illuminate\Contracts\Container\Container $container)
  * @method static \Lunar\Managers\TaxManager forgetDrivers()
  *
- * @see TaxManager
+ * @see \Lunar\Managers\TaxManager
  */
 class Taxes extends Facade
 {

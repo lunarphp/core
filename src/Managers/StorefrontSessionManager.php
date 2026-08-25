@@ -57,7 +57,7 @@ class StorefrontSessionManager implements StorefrontSessionInterface
     }
 
     /**
-     * @return Collection<CustomerGroupContract>
+     * @return \Illuminate\Support\Collection<\Lunar\Models\Contracts\CustomerGroup>
      */
     public function getCustomerGroups(): Collection
     {
@@ -65,7 +65,7 @@ class StorefrontSessionManager implements StorefrontSessionInterface
     }
 
     /**
-     * @param  Collection<CustomerGroupContract>  $customerGroups
+     * @param  \Illuminate\Support\Collection<\Lunar\Models\Contracts\CustomerGroup>  $customerGroups
      */
     public function setCustomerGroups(Collection $customerGroups): static
     {

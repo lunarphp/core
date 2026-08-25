@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Casts\AsArrayObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Support\Carbon;
 use Lunar\Base\BaseModel;
 use Lunar\Base\Traits\HasMacros;
 use Lunar\Base\Traits\HasMedia;
@@ -20,8 +19,8 @@ use Spatie\MediaLibrary\HasMedia as SpatieHasMedia;
  * @property AsArrayObject $name
  * @property int $position
  * @property ?AsArrayObject $meta
- * @property ?Carbon $created_at
- * @property ?Carbon $updated_at
+ * @property ?\Illuminate\Support\Carbon $created_at
+ * @property ?\Illuminate\Support\Carbon $updated_at
  */
 class ProductOptionValue extends BaseModel implements Contracts\ProductOptionValue, SpatieHasMedia
 {

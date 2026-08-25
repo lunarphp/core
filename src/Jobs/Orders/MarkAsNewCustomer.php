@@ -4,11 +4,9 @@ namespace Lunar\Jobs\Orders;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Collection;
 use Lunar\Facades\DB;
 use Lunar\Models\Order;
 use Lunar\Models\OrderAddress;
@@ -25,15 +23,15 @@ class MarkAsNewCustomer implements ShouldQueue
     /**
      * The product instance.
      *
-     * @var Model
+     * @var \Illuminate\Database\Eloquent\Model
      */
     protected $orderId;
 
     /**
      * Create a new job instance.
      *
-     * @param  Model  $model
-     * @param  Collection  $tags
+     * @param  \Illuminate\Database\Eloquent\Model  $model
+     * @param  \Illuminate\Support\Collection  $tags
      * @return void
      */
     public function __construct($orderId)

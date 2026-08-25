@@ -2,7 +2,6 @@
 
 namespace Lunar\Facades;
 
-use Illuminate\Database\DatabaseManager;
 use Illuminate\Support\Facades\DB as DBFacade;
 
 /**
@@ -112,7 +111,7 @@ use Illuminate\Support\Facades\DB as DBFacade;
  * @method static int transactionLevel()
  * @method static void afterCommit(callable $callback)
  *
- * @see DatabaseManager
+ * @see \Illuminate\Database\DatabaseManager
  */
 class DB extends DBFacade
 {

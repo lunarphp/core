@@ -2,23 +2,32 @@
 
 namespace Lunar\Rules;
 
-use Closure;
-use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Contracts\Validation\Rule;
 use Lunar\Base\Validation\CouponValidator;
 
-class ValidCoupon implements ValidationRule
+class ValidCoupon implements Rule
 {
     /**
-     * Run the validation rule.
+     * Determine if the validation rule passes.
+     *
+     * @param  string  $attribute
+     * @param  mixed  $value
+     * @return bool
      */
-    public function validate(string $attribute, mixed $value, Closure $fail): void
+    public function passes($attribute, $value)
     {
-        $isValid = app(
+        return app(
             config('lunar.discounts.coupon_validator', CouponValidator::class)
         )->validate($value);
+    }
 
-        if (! $isValid) {
-            $fail('The :attribute is not valid or has been used too many times');
-        }
+    /**
+     * Get the validation error message.
+     *
+     * @return string
+     */
+    public function message()
+    {
+        return 'The :attribute is not valid or has been used too many times';
     }
 }

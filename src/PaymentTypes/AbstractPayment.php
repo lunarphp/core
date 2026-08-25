@@ -13,11 +13,6 @@ use Lunar\Models\Order;
 abstract class AbstractPayment implements PaymentTypeInterface
 {
     /**
-     * Whether we should allow partial payments
-     */
-    protected bool $allowPartialPayment = false;
-
-    /**
      * The instance of the cart.
      */
     protected ?CartContract $cart = null;
@@ -77,13 +72,6 @@ abstract class AbstractPayment implements PaymentTypeInterface
     public function setConfig(array $config): self
     {
         $this->config = $config;
-
-        return $this;
-    }
-
-    public function allowPartialPayment(bool $condition = true): self
-    {
-        $this->allowPartialPayment = $condition;
 
         return $this;
     }

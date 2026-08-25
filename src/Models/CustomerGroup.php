@@ -4,8 +4,6 @@ namespace Lunar\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Support\Carbon;
 use Lunar\Base\BaseModel;
 use Lunar\Base\Casts\AsAttributeData;
 use Lunar\Base\Traits\HasAttributes;
@@ -20,8 +18,8 @@ use Lunar\Database\Factories\CustomerGroupFactory;
  * @property string $handle
  * @property bool $default
  * @property ?array $attribute_data
- * @property ?Carbon $created_at
- * @property ?Carbon $updated_at
+ * @property ?\Illuminate\Support\Carbon $created_at
+ * @property ?\Illuminate\Support\Carbon $updated_at
  */
 class CustomerGroup extends BaseModel implements Contracts\CustomerGroup
 {
@@ -100,7 +98,7 @@ class CustomerGroup extends BaseModel implements Contracts\CustomerGroup
     /**
      * Get the mapped attributes relation.
      *
-     * @return MorphToMany
+     * @return \Illuminate\Database\Eloquent\Relations\MorphToMany
      */
     public function mappedAttributes()
     {

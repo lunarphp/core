@@ -22,12 +22,20 @@ class ProductObserver
 
             $product->productOptions()->detach();
 
+            $product->associations()->delete();
+
+            $product->inverseAssociations()->delete();
+
             $product->channels()->detach();
 
             $product->tags()->detach();
+        } else {
+            $product->variants()->get()->each->delete();
         }
+    }
 
-        $product->associations()->delete();
-        $product->inverseAssociations()->delete();
+    public function restored(ProductContract $product): void
+    {
+        $product->variants()->withTrashed()->get()->each->restore();
     }
 }

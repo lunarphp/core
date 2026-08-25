@@ -47,7 +47,7 @@ class GetUnitPrice
         );
 
         $cartLine->unitPriceInclTax = new Price(
-            $priceResponse->matched->priceIncTax($cart->taxZone)->value,
+            $priceResponse->matched->priceIncTax()->value,
             $cart->currency,
             $purchasable->getUnitQuantity()
         );

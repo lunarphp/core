@@ -65,7 +65,7 @@ class AttributeManifest
     }
 
     /**
-     * @return Collection
+     * @return \Illuminate\Support\Collection
      */
     public function getSearchableAttributes(string $attributeType)
     {

@@ -3,7 +3,6 @@
 namespace Lunar\Base\Casts;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
 use Lunar\DataTypes\Price as PriceDataType;
 use Lunar\Models\Currency;
@@ -13,11 +12,11 @@ class Price implements CastsAttributes
     /**
      * Cast the given value.
      *
-     * @param  Model  $model
+     * @param  \Illuminate\Database\Eloquent\Model  $model
      * @param  string  $key
      * @param  mixed  $value
      * @param  array  $attributes
-     * @return PriceDataType
+     * @return \Lunar\DataTypes\Price
      */
     public function get($model, $key, $value, $attributes)
     {
@@ -46,9 +45,9 @@ class Price implements CastsAttributes
     /**
      * Prepare the given value for storage.
      *
-     * @param  Model  $model
+     * @param  \Illuminate\Database\Eloquent\Model  $model
      * @param  string  $key
-     * @param  PriceDataType  $value
+     * @param  \Lunar\DataTypes\Price  $value
      * @param  array  $attributes
      * @return array
      */

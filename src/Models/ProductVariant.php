@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Lunar\Base\BaseModel;
 use Lunar\Base\Casts\AsAttributeData;
@@ -26,7 +25,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property int $id
  * @property int $product_id
  * @property int $tax_class_id
- * @property ?Collection $attribute_data
+ * @property ?\Illuminate\Support\Collection $attribute_data
  * @property ?string $tax_ref
  * @property int $unit_quantity
  * @property int $min_quantity
@@ -49,9 +48,9 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property int $stock
  * @property int $backorder
  * @property string $purchasable
- * @property ?Carbon $created_at
- * @property ?Carbon $updated_at
- * @property ?Carbon $deleted_at
+ * @property ?\Illuminate\Support\Carbon $created_at
+ * @property ?\Illuminate\Support\Carbon $updated_at
+ * @property ?\Illuminate\Support\Carbon $deleted_at
  */
 class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasThumbnailImage, Purchasable
 {
@@ -75,7 +74,7 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
      * {@inheritDoc}
      */
     protected $casts = [
-        'shippable' => 'bool',
+        'requires_shipping' => 'bool',
         'attribute_data' => AsAttributeData::class,
     ];
 
@@ -209,14 +208,6 @@ class ProductVariant extends BaseModel implements Contracts\ProductVariant, HasT
         }
 
         return $quantity <= $this->getTotalInventory();
-    }
-
-    public function isPurchasable(): bool
-    {
-        return ! $this->trashed()
-            && $this->product
-            && ! $this->product->trashed()
-            && $this->product->status === 'published';
     }
 
     public function getTotalInventory(): int

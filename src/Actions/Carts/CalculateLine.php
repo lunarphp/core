@@ -15,7 +15,7 @@ class CalculateLine
      * Execute the action.
      *
      * @param  \Illuminate\Database\Eloquent\Collection  $customerGroups
-     * @return CartLine
+     * @return \Lunar\Models\CartLine
      */
     public function execute(
         CartLineContract $cartLine,

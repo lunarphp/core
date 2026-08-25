@@ -16,7 +16,7 @@ class CalculateLineSubtotal
      * Execute the action.
      *
      * @param  \Illuminate\Database\Eloquent\Collection  $customerGroups
-     * @return CartLine
+     * @return \Lunar\Models\CartLine
      */
     public function execute(
         CartLineContract $cartLine,
@@ -45,7 +45,7 @@ class CalculateLineSubtotal
             );
 
             $priceInclTax = new Price(
-                $priceResponse->matched->priceIncTax($cart->taxZone)->value,
+                $priceResponse->matched->priceIncTax()->value,
                 $cart->currency,
                 $purchasable->getUnitQuantity()
             );
@@ -78,7 +78,7 @@ class CalculateLineSubtotal
     /**
      * Return the cart line modifiers.
      *
-     * @return Collection
+     * @return \Illuminate\Support\Collection
      */
     private function getModifiers()
     {

@@ -19,7 +19,7 @@ interface ShippingManifestInterface
     /**
      * Add a collection of shipping options to the manifest.
      *
-     * @param  ShippingOption  $shippingOption
+     * @param  \Lunar\DataTypes\ShippingOption  $shippingOption
      * @return self
      */
     public function addOptions(Collection $shippingOptions);

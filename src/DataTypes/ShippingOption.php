@@ -25,7 +25,7 @@ class ShippingOption implements Purchasable
     /**
      * Get the price for the purchasable item.
      *
-     * @return Price
+     * @return \Lunar\DataTypes\Price
      */
     public function getPrice()
     {
@@ -154,10 +154,5 @@ class ShippingOption implements Purchasable
     public function getTotalInventory(): int
     {
         return 1;
-    }
-
-    public function isPurchasable(): bool
-    {
-        return true;
     }
 }

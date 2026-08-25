@@ -22,7 +22,7 @@ class ShippingModifiers
     /**
      * Return the shipping modifiers.
      *
-     * @return Collection
+     * @return \Illuminate\Support\Collection
      */
     public function getModifiers()
     {

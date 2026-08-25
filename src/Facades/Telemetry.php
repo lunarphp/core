@@ -3,7 +3,6 @@
 namespace Lunar\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use Lunar\Base\TelemetryService;
 use Lunar\Base\TelemetryServiceInterface;
 
 /**
@@ -13,7 +12,7 @@ use Lunar\Base\TelemetryServiceInterface;
  * @method static bool shouldRun()
  * @method static void run()
  *
- * @see TelemetryService
+ * @see \Lunar\Base\TelemetryService
  */
 class Telemetry extends Facade
 {

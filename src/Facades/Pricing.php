@@ -4,7 +4,6 @@ namespace Lunar\Facades;
 
 use Illuminate\Support\Facades\Facade;
 use Lunar\Base\PricingManagerInterface;
-use Lunar\Managers\PricingManager;
 
 /**
  * @method static \Lunar\Managers\PricingManager for(\Lunar\Base\Purchasable $purchasable)
@@ -16,7 +15,7 @@ use Lunar\Managers\PricingManager;
  * @method static \Lunar\Managers\PricingManager customerGroup(\Lunar\Models\Contracts\CustomerGroup|null $customerGroup)
  * @method static \Lunar\Base\DataTransferObjects\PricingResponse get()
  *
- * @see PricingManager
+ * @see \Lunar\Managers\PricingManager
  */
 class Pricing extends Facade
 {

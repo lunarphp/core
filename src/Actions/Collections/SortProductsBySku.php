@@ -10,7 +10,7 @@ class SortProductsBySku
      * Execute the action.
      *
      * @param  string  $direction
-     * @return Collection
+     * @return \Illuminate\Support\Collection
      */
     public function execute(Collection $products, $direction = 'asc')
     {

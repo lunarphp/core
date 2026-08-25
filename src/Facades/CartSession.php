@@ -4,7 +4,6 @@ namespace Lunar\Facades;
 
 use Illuminate\Support\Facades\Facade;
 use Lunar\Base\CartSessionInterface;
-use Lunar\Managers\CartSessionManager;
 
 /**
  * @method static bool allowsMultipleOrdersPerCart()
@@ -24,7 +23,7 @@ use Lunar\Managers\CartSessionManager;
  * @method static \Illuminate\Support\Collection getShippingOptions()
  * @method static \Lunar\Models\Order createOrder(bool $forget = true)
  *
- * @see CartSessionManager
+ * @see \Lunar\Managers\CartSessionManager
  */
 class CartSession extends Facade
 {

@@ -86,8 +86,6 @@ class File implements FieldType, JsonSerializable
                 'multiple' => 'boolean',
                 'max_files' => 'numeric',
                 'min_files' => 'numeric',
-                'disk' => 'string',
-                'directory' => 'string',
             ],
         ];
     }

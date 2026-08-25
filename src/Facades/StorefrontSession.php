@@ -4,7 +4,6 @@ namespace Lunar\Facades;
 
 use Illuminate\Support\Facades\Facade;
 use Lunar\Base\StorefrontSessionInterface;
-use Lunar\Managers\StorefrontSessionManager;
 
 /**
  * @method static void forget()
@@ -23,7 +22,7 @@ use Lunar\Managers\StorefrontSessionManager;
  * @method static \Lunar\Managers\StorefrontSessionManager setCurrency(\Lunar\Models\Contracts\Currency $currency)
  * @method static \Lunar\Models\Contracts\Currency getCurrency()
  *
- * @see StorefrontSessionManager
+ * @see \Lunar\Managers\StorefrontSessionManager
  */
 class StorefrontSession extends Facade
 {
