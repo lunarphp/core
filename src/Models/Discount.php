@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Lunar\Base\BaseModel;
 use Lunar\Base\Casts\CouponString;
 use Lunar\Base\Traits\HasChannels;
@@ -22,14 +23,14 @@ use Lunar\DiscountTypes\AbstractDiscountType;
  * @property string $handle
  * @property ?string $coupon
  * @property string $type
- * @property \Illuminate\Support\Carbon $starts_at
- * @property \Illuminate\Support\Carbon $ends_at
+ * @property Carbon $starts_at
+ * @property Carbon $ends_at
  * @property int $uses
  * @property ?int $max_uses
  * @property int $priority
  * @property bool $stop
- * @property ?\Illuminate\Support\Carbon $created_at
- * @property ?\Illuminate\Support\Carbon $updated_at
+ * @property ?Carbon $created_at
+ * @property ?Carbon $updated_at
  */
 class Discount extends BaseModel implements Contracts\Discount
 {
@@ -267,11 +268,22 @@ class Discount extends BaseModel implements Contracts\Discount
         );
     }
 
-    public function scopeUsable(Builder $query): Builder
+    /**
+     * @param  iterable  $exempt  Discount ids that stay usable whatever their
+     *                            use count - a cart that already consumed a
+     *                            discount must still be able to re-price with it.
+     */
+    public function scopeUsable(Builder $query, iterable $exempt = []): Builder
     {
-        return $query->where(function ($subQuery) {
+        $exempt = collect($exempt)->filter()->values();
+
+        return $query->where(function ($subQuery) use ($exempt) {
             $subQuery->whereRaw('uses < max_uses')
-                ->orWhereNull('max_uses');
+                ->orWhereNull('max_uses')
+                ->when(
+                    $exempt->isNotEmpty(),
+                    fn ($subQuery) => $subQuery->orWhereIn('id', $exempt)
+                );
         });
     }
 }

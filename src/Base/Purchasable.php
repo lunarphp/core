@@ -4,13 +4,15 @@ namespace Lunar\Base;
 
 use Illuminate\Support\Collection;
 use Lunar\Models\Contracts\TaxClass;
+use Lunar\Models\Price;
+use Lunar\Validation\CartLine\CartLineAvailability;
 
 interface Purchasable
 {
     /**
      * Get the purchasable prices.
      *
-     * @return \Illuminate\Support\Collection<\Lunar\Models\Price>
+     * @return Collection<Price>
      */
     public function getPrices(): Collection;
 
@@ -82,6 +84,17 @@ interface Purchasable
      * Return whether the purchasable can be fulfilled at a given quantity
      */
     public function canBeFulfilledAtQuantity(int $quantity): bool;
+
+    /**
+     * Return whether this item is intrinsically purchasable.
+     *
+     * This covers state that lives on the purchasable itself — e.g. a
+     * variant whose parent product has been soft-deleted or unpublished —
+     * and is checked at order creation as a last-line defence. It does
+     * not cover channel or customer-group availability; those are
+     * enforced by {@see CartLineAvailability}.
+     */
+    public function isPurchasable(): bool;
 
     /**
      * Returns the total inventory the purchasable has available

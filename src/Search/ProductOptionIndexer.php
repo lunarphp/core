@@ -24,7 +24,9 @@ class ProductOptionIndexer extends ScoutIndexer
 
     public function makeAllSearchableUsing(Builder $query): Builder
     {
-        return $query;
+        return $query->with([
+            'values' => fn ($query) => $query->select('id', 'product_option_id', 'name'),
+        ]);
     }
 
     public function toSearchableArray(Model $model): array
@@ -37,8 +39,8 @@ class ProductOptionIndexer extends ScoutIndexer
         }
 
         // Loop for add option label
-        foreach ($model->name as $locale => $name) {
-            $data['label_'.$locale] = $name;
+        foreach ($model->label as $locale => $label) {
+            $data['label_'.$locale] = $label;
         }
 
         // Loop for add options

@@ -6,8 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Kalnoy\Nestedset\NodeTrait;
-use Kalnoy\Nestedset\QueryBuilder;
+use Illuminate\Support\Carbon;
 use Lunar\Base\BaseModel;
 use Lunar\Base\Casts\AsAttributeData;
 use Lunar\Base\HasThumbnailImage;
@@ -19,6 +18,8 @@ use Lunar\Base\Traits\HasTranslations;
 use Lunar\Base\Traits\HasUrls;
 use Lunar\Base\Traits\Searchable;
 use Lunar\Database\Factories\CollectionFactory;
+use Lunar\Nestedset\NodeTrait;
+use Lunar\Nestedset\QueryBuilder;
 use Spatie\MediaLibrary\HasMedia as SpatieHasMedia;
 
 /**
@@ -30,9 +31,9 @@ use Spatie\MediaLibrary\HasMedia as SpatieHasMedia;
  * @property string $type
  * @property ?array $attribute_data
  * @property string $sort
- * @property ?\Illuminate\Support\Carbon $created_at
- * @property ?\Illuminate\Support\Carbon $updated_at
- * @property ?\Illuminate\Support\Carbon $deleted_at
+ * @property ?Carbon $created_at
+ * @property ?Carbon $updated_at
+ * @property ?Carbon $deleted_at
  */
 class Collection extends BaseModel implements Contracts\Collection, HasThumbnailImage, SpatieHasMedia
 {
